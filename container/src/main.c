@@ -5,6 +5,8 @@
 #include "lsqlite3.h"
 #include "llama-run.h"
 #include "stream.h"
+#include "ort.h"
+#include "onnxruntime_c_api.h"
 #include "LuaBase64.h"
 
 LUALIB_API int luaopen_LuaBase64_c(Lua* L);
@@ -145,6 +147,12 @@ int boot_lua(lua_State* L) {
   luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_PRELOAD_TABLE);
   lua_pushcfunction(L, luaopen_llama);
   lua_setfield(L, -2, "_llama");
+  lua_pop(L, 1);
+
+  // Preload ort
+  luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_PRELOAD_TABLE);
+  lua_pushcfunction(L, luaopen_ort);
+  lua_setfield(L, -2, "ort");
   lua_pop(L, 1);
 
   // Preload stream

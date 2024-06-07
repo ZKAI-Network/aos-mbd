@@ -204,6 +204,10 @@ def main():
     # Append llama.cpp library to the command
     cmd.extend(['/llama.cpp/libllama.a', '/llama.cpp/common/libcommon.a', '/llama.cpp/llama-run.o'])
     cmd.extend(['-s', 'EXPORTED_FUNCTIONS=["_malloc"]'])
+    # Append onnx runtime modules to linked libraries
+    cmd.extend(['-I', '/onnxruntime/include/onnxruntime/core/session/'])
+    cmd.extend(['/opt/ort.c'])
+    
     cmd.extend(['-lm', '-ldl', '-o', definition.get_output_file(), '-s', 'EXPORTED_RUNTIME_METHODS=["cwrap"]'])
 
     print('Compile command is {}'.format(' '.join(cmd)))

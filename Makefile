@@ -24,6 +24,12 @@ test-llm:
 	cp build/aos/process/AOS.js test-llm/AOS.js
 	cd test-llm && yarn test
 
+.PHONY: test-onnx
+test-onnx:
+	cp build/aos/process/AOS.wasm test-llm/AOS.wasm
+	cp build/aos/process/AOS.js test-llm/AOS.js
+	cd test-onnx && yarn test
+
 .PHONY: test
 test: node
 	cp AOS.wasm test/AOS.wasm
@@ -56,23 +62,29 @@ clean:
 build/aos/package.json: build
 	cd build; git submodule init; git submodule update --remote
 
-build/aos/process/AOS.wasm: libllama.a build/llama.cpp/llama-run.o build/aos/package.json container 
-	docker run -v $(PWD)/build/aos/process:/src -v $(PWD)/build/llama.cpp:/llama.cpp p3rmaw3b/ao emcc-lua $(if $(DEBUG),-e DEBUG=TRUE)
+build/aos/process/AOS.wasm: libllama.a build/llama.cpp/llama-run.o build/aos/package.json build/onnxruntime container 
+	docker run -v $(PWD)/build/aos/process:/src -v $(PWD)/build/llama.cpp:/llama.cpp -v $(PWD)/build/onnxruntime:/onnxruntime p3rmaw3b/ao emcc-lua $(if $(DEBUG),-e DEBUG=TRUE)
 
 build/llama.cpp: build
 	if [ ! -d "build/llama.cpp" ]; then \
 		cd build; git clone https://github.com/ggerganov/llama.cpp.git; \
 	fi
 
-libllama.a: build/llama.cpp container
+build/onnxruntime: build
+	if [ ! -d "build/onnxruntime" ]; then \
+		cd build; git clone --recursive https://github.com/microsoft/onnxruntime; \
+		cd onnxruntime; ./build.sh --config Release --build_wasm --skip_tests --disable_wasm_exception_catching --disable_rtti --allow_running_as_root --update --build --parallel --nvcc_threads 64 --skip_submodule_sync; \
+	fi
+
+libllama.a: build/llama.cpp build/onnxruntime container
 	@echo "Patching llama.cpp alignment asserts..."
 	sed -i.bak 's/#define ggml_assert_aligned.*/#define ggml_assert_aligned\(ptr\)/g' build/llama.cpp/ggml.c
 	sed -i.bak '/.*GGML_ASSERT.*GGML_MEM_ALIGN == 0.*/d' build/llama.cpp/ggml.c
 	@echo "Building llama.cpp..."
 	@docker run -v $(PWD)/build/llama.cpp:/llama.cpp p3rmaw3b/ao sh -c \
-		"cd /llama.cpp && emcmake cmake -DCMAKE_CXX_FLAGS='$(EMXX_CFLAGS)' -S . -B . -DLLAMA_BUILD_EXAMPLES=OFF"
+		"cd /llama.cpp && emcmake cmake -DCMAKE_CXX_FLAGS='$(EMXX_CFLAGS) -I/onnxruntime/include' -S . -B . -DLLAMA_BUILD_EXAMPLES=OFF"
 	@docker run -v $(PWD)/build/llama.cpp:/llama.cpp p3rmaw3b/ao \
-		sh -c "cd /llama.cpp && emmake make llama common EMCC_CFLAGS='$(EMXX_CFLAGS)'"
+		sh -c "cd /llama.cpp && emmake make llama common EMCC_CFLAGS='$(EMXX_CFLAGS)' LDFLAGS='-L/onnxruntime/build/Linux/Release -lonnxruntime'"
 	cp build/llama.cpp/libllama.a libllama.a
 
 build/llama.cpp/llama-run.o: libllama.a src/llama-run.cpp container
