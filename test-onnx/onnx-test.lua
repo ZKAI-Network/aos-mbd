@@ -1,3 +1,4 @@
+local Llama = require("llama")
 local Ort = require "ort"
 local vec = require "vec"
 
