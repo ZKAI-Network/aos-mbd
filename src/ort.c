@@ -547,7 +547,7 @@ static int lort_value_istensor (lua_State *L) {
     return 1;
 }
 
-static int lort_value_getdata (lua_State *L) { // TODO сделать лучше размер данных
+static int lort_value_getdata (lua_State *L) { // TODO improve data size
     luaL_checktype(L, 1, LUA_TUSERDATA);
     OrtValue* value = *(OrtValue**)luaL_checkudata(L, 1, "Ort.Value");
 
@@ -564,7 +564,7 @@ static int lort_value_getdata (lua_State *L) { // TODO сделать лучше
     char* output_tensor_data = NULL;
     ORT_LUA_ERROR(L, g_ort->GetTensorMutableData(value, (void**)&output_tensor_data));
 
-    lua_createtable(L, count, 2); // резервируем под поля для записи в пнг
+    lua_createtable(L, count, 2); // reserve for fields for recording in PNG
 
     switch (datatype)
     {
@@ -609,7 +609,7 @@ static const struct luaL_Reg value_m [] = {
     {NULL, NULL}
 };
 
-/* Оставшиеся классы
+/* Remaining classes
 ORT_RUNTIME_CLASS(IoBinding);
 ORT_RUNTIME_CLASS(RunOptions);
 ORT_RUNTIME_CLASS(TypeInfo);
