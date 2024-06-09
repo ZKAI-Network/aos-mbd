@@ -13,10 +13,11 @@ do {                                                            \
 OrtStatus* onnx_status = (expr);                                \
     if (onnx_status != NULL) {                                  \
         const char* msg = g_ort->GetErrorMessage(onnx_status);  \
+        printf("Raw Error Message: %s\n", msg);\
         g_ort->ReleaseStatus(onnx_status);                      \
         luaL_error((L), "[ORT] %s\n", msg);                     \
         return 0;                                               \
-    }                                                           \
+    }                                                             \
 } while (0)
 
 const static char* lort_tensort_elemennt_data_type [] = {
@@ -188,7 +189,7 @@ static int lort_createvalue (lua_State *L) {
     return 1;
 }
 
-static const struct luaL_Reg ort [] = {
+static const struct luaL_Reg ort_m [] = {
     {"CreateEnv", lort_createenv},
     {"CreateSessionOptions", lort_createsessionoptions},
     {"CreateValue", lort_createvalue},
@@ -609,7 +610,7 @@ static const struct luaL_Reg value_m [] = {
     {NULL, NULL}
 };
 
-/* Remaining classes
+/* Remaining classesgit d
 ORT_RUNTIME_CLASS(IoBinding);
 ORT_RUNTIME_CLASS(RunOptions);
 ORT_RUNTIME_CLASS(TypeInfo);
@@ -629,6 +630,11 @@ ORT_RUNTIME_CLASS(TensorRTProviderOptionsV2);
 __declspec(dllexport)
 #endif
 int luaopen_ort(lua_State *L) {
+    g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
+    if (!g_ort) {
+        luaL_error(L, "Failed to init ONNX Runtime engine.\n");
+        return 0;
+    }
 
     luaL_newmetatable(L, "Ort.Env");
     lua_pushvalue(L, -1);
@@ -650,7 +656,7 @@ int luaopen_ort(lua_State *L) {
     lua_setfield(L, -2, "__index");
     luaL_setfuncs(L, value_m, 0);
 
-    luaL_newlib(L, ort);
+    luaL_newlib(L, ort_m);
 
     return 1;
 }

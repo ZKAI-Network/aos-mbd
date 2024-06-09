@@ -19,6 +19,7 @@ const AdmissableList =
 describe('AOS-ONNX Tests', async () => {
   var instance;
   const handle = async function (msg, env) {
+    console.log(instance.cwrap)
     const res = await instance.cwrap('handle', 'string', ['string', 'string'], { async: true })(JSON.stringify(msg), JSON.stringify(env))
     console.log('Memory used:', instance.HEAP8.length)
     return JSON.parse(res)
@@ -75,13 +76,21 @@ describe('AOS-ONNX Tests', async () => {
     assert.equal(result.response.Output.data.output, 2)
   })
 
+  it.skip('Llama Lua library loads', async () => {
+    const result = await handle(getEval(`
+local Ort = require "ort"
+`), getEnv())
+    console.log(result)
+    assert.ok(result.response.Output.data.output == "A decentralized AI inference engine, built on top of ONNX runtime.")
+  })
+
   it('AOS runs Simple ONNX file', async () => {
     const result =
       await handle(
         getEval(fs.readFileSync("onnx-test.lua", "utf-8")),
         getEnv()
       )
-    console.log(result.response)
+    console.log(result)
     assert.ok(result.response.Output.data.output.includes("<|im_end|>"))
   })
 

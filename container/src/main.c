@@ -3,7 +3,6 @@
 #include <lualib.h>
 
 #include "lsqlite3.h"
-#include "llama-run.h"
 #include "stream.h"
 #include "ort.h"
 #include "onnxruntime_c_api.h"
@@ -143,22 +142,10 @@ int boot_lua(lua_State* L) {
   lua_setfield(L, -2, LUA_SQLLIBNAME);
   lua_pop(L, 1);  // remove PRELOAD table
 
-  // Preload llama
-  luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_PRELOAD_TABLE);
-  lua_pushcfunction(L, luaopen_llama);
-  lua_setfield(L, -2, "_llama");
-  lua_pop(L, 1);
-
   // Preload ort
   luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_PRELOAD_TABLE);
   lua_pushcfunction(L, luaopen_ort);
   lua_setfield(L, -2, "ort");
-  lua_pop(L, 1);
-
-  // Preload stream
-  luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_PRELOAD_TABLE);
-  lua_pushcfunction(L, luaopen_stream);
-  lua_setfield(L, -2, "stream");
   lua_pop(L, 1);
 
    // Preload LuaBase64

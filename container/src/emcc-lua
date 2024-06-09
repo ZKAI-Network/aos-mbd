@@ -169,12 +169,12 @@ def main():
     cmd.extend([
         '-g2',
         '-s', 'ASYNCIFY=1',
-        '-s', 'MEMORY64=1',
-        '-s', 'STACK_SIZE=41943040',
+        # '-s', 'MEMORY64=1',
+        '-s', 'STACK_SIZE=20971520',
         '-s', 'ASYNCIFY_STACK_SIZE=41943040',
         '-s', 'ALLOW_MEMORY_GROWTH=1',
-        '-s', 'INITIAL_MEMORY=83886080',
-        '-s', 'MAXIMUM_MEMORY=17179869184',
+        '-s', 'INITIAL_MEMORY=31457280',
+        '-s', 'MAXIMUM_MEMORY=4294967296',
         '-s', 'WASM=1',
         '-s', 'MODULARIZE',
         # '-s', 'FILESYSTEM=0',
@@ -197,15 +197,20 @@ def main():
     # Append LuaBase64.c files to the command
     cmd.extend(['/opt/b64enc.c', '/opt/b64dec.c', '/opt/LuaBase64.c'])
     # cmd.extend(['-I', '/opt'])
+    cmd.extend(['/opt/stream.c', '/opt/stream-bindings.c'])
     cmd.extend([quote(v.filepath) for v in link_libraries])
-    # Append Llama2.c modules to linked libraries
-    cmd.extend(['-I', '/llama.cpp', '-I', '/llama.cpp/common'])
-    cmd.extend(['/opt/llama-bindings.c', '/opt/stream.c', '/opt/stream-bindings.c'])
-    # Append llama.cpp library to the command
-    cmd.extend(['/llama.cpp/libllama.a', '/llama.cpp/common/libcommon.a', '/llama.cpp/llama-run.o'])
     cmd.extend(['-s', 'EXPORTED_FUNCTIONS=["_malloc"]'])
     # Append onnx runtime modules to linked libraries
-    cmd.extend(['-I', '/onnxruntime/include/onnxruntime/core/session/'])
+    cmd.extend(['-I', '/onnxruntime/include/onnxruntime/core/session', '-I','/onnxruntime/build/MacOs/Release/'])
+    # Define the base directory
+    base_dir = '/onnxruntime/build/MacOs/Release/'
+
+    # List all .a files in the directory and its subdirectories
+    lib_files = glob.glob(os.path.join(base_dir, '**/*.a'), recursive=True)
+    print(lib_files)
+    # Add all library files found
+    cmd.extend(lib_files)
+
     cmd.extend(['/opt/ort.c'])
     
     cmd.extend(['-lm', '-ldl', '-o', definition.get_output_file(), '-s', 'EXPORTED_RUNTIME_METHODS=["cwrap"]'])

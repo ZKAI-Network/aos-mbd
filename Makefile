@@ -3,7 +3,7 @@ WALLET_LOC ?= key.json
 # Set to 1 to enable debugging
 DEBUG ?=
 
-EMXX_CFLAGS=-s MEMORY64=1 -O3 -msimd128 -fno-rtti -DNDEBUG \
+EMXX_CFLAGS=-O3 -msimd128 -fno-rtti -DNDEBUG \
 	-flto=full -s BUILD_AS_WORKER=1 -s EXPORT_ALL=1 \
 	-s EXPORT_ES6=1 -s MODULARIZE=1 -s INITIAL_MEMORY=800MB \
 	-s MAXIMUM_MEMORY=4GB -s ALLOW_MEMORY_GROWTH -s FORCE_FILESYSTEM=1 \
@@ -26,8 +26,8 @@ test-llm:
 
 .PHONY: test-onnx
 test-onnx:
-	cp build/aos/process/AOS.wasm test-llm/AOS.wasm
-	cp build/aos/process/AOS.js test-llm/AOS.js
+	cp build/aos/process/AOS.wasm test-onnx/AOS.wasm
+	cp build/aos/process/AOS.js test-onnx/AOS.js
 	cd test-onnx && yarn test
 
 .PHONY: test
@@ -54,7 +54,7 @@ build:
 .PHONY: clean
 clean:
 	rm -rf build
-	rm -f AOS.wasm libllama.a test/AOS.wasm build/aos/process/AOS.wasm
+	rm -f AOS.wasm  test/AOS.wasm build/aos/process/AOS.wasm
 	rm -f package-lock.json
 	rm -rf node_modules
 	# docker rmi -f p3rmaw3b/ao || true
@@ -62,35 +62,14 @@ clean:
 build/aos/package.json: build
 	cd build; git submodule init; git submodule update --remote
 
-build/aos/process/AOS.wasm: libllama.a build/llama.cpp/llama-run.o build/aos/package.json build/onnxruntime container 
-	docker run -v $(PWD)/build/aos/process:/src -v $(PWD)/build/llama.cpp:/llama.cpp -v $(PWD)/build/onnxruntime:/onnxruntime p3rmaw3b/ao emcc-lua $(if $(DEBUG),-e DEBUG=TRUE)
-
-build/llama.cpp: build
-	if [ ! -d "build/llama.cpp" ]; then \
-		cd build; git clone https://github.com/ggerganov/llama.cpp.git; \
-	fi
+build/aos/process/AOS.wasm: build/aos/package.json build/onnxruntime container 
+	docker run -v $(PWD)/build/aos/process:/src -v $(PWD)/build/onnxruntime:/onnxruntime p3rmaw3b/ao emcc-lua $(if $(DEBUG),-e DEBUG=TRUE)
 
 build/onnxruntime: build
 	if [ ! -d "build/onnxruntime" ]; then \
 		cd build; git clone --recursive https://github.com/microsoft/onnxruntime; \
-		cd onnxruntime; ./build.sh --config Release --build_wasm --skip_tests --disable_wasm_exception_catching --disable_rtti --allow_running_as_root --update --build --parallel --nvcc_threads 64 --skip_submodule_sync; \
+		cd onnxruntime; ./build.sh --config Release --build_wasm_static_lib --skip_tests --disable_wasm_exception_catching --disable_rtti --allow_running_as_root --update --build --parallel --nvcc_threads 64 --skip_submodule_sync; \
 	fi
-
-libllama.a: build/llama.cpp build/onnxruntime container
-	@echo "Patching llama.cpp alignment asserts..."
-	sed -i.bak 's/#define ggml_assert_aligned.*/#define ggml_assert_aligned\(ptr\)/g' build/llama.cpp/ggml.c
-	sed -i.bak '/.*GGML_ASSERT.*GGML_MEM_ALIGN == 0.*/d' build/llama.cpp/ggml.c
-	@echo "Building llama.cpp..."
-	@docker run -v $(PWD)/build/llama.cpp:/llama.cpp p3rmaw3b/ao sh -c \
-		"cd /llama.cpp && emcmake cmake -DCMAKE_CXX_FLAGS='$(EMXX_CFLAGS) -I/onnxruntime/include' -S . -B . -DLLAMA_BUILD_EXAMPLES=OFF"
-	@docker run -v $(PWD)/build/llama.cpp:/llama.cpp p3rmaw3b/ao \
-		sh -c "cd /llama.cpp && emmake make llama common EMCC_CFLAGS='$(EMXX_CFLAGS)' LDFLAGS='-L/onnxruntime/build/Linux/Release -lonnxruntime'"
-	cp build/llama.cpp/libllama.a libllama.a
-
-build/llama.cpp/llama-run.o: libllama.a src/llama-run.cpp container
-	@echo "Building llama-run.cpp..."
-	@docker run -v $(PWD)/build/llama.cpp:/llama.cpp p3rmaw3b/ao \
-		sh -c "cd /src && em++ -s MEMORY64=1 -Wno-experimental -c /opt/llama-run.cpp -o /llama.cpp/llama-run.o -I /llama.cpp -I /llama.cpp/common"
 
 .PHONY: container
 container: container/Dockerfile
@@ -102,5 +81,5 @@ publish-module: AOS.wasm
 
 .PHONY: dockersh
 dockersh:
-	# docker run -v $(PWD)/build/aos/process:/src -v $(PWD)/build/llama.cpp:/llama.cpp -it p3rmaw3b/ao /bin/bash
+	# docker run -v $(PWD)/build/aos/process:/src -it p3rmaw3b/ao /bin/bash
 	docker run -v .:/src -it p3rmaw3b/ao /bin/bash

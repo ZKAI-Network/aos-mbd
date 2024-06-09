@@ -100,7 +100,7 @@ if (ENVIRONMENT_IS_NODE) {
  };
 } else if (ENVIRONMENT_IS_SHELL) {
  if ((typeof process == "object" && typeof require === "function") || typeof window == "object" || typeof importScripts == "function") throw new Error("not compiled for this environment (did you build to HTML and try to run it not on the web, or set ENVIRONMENT to something - like node - and run it someplace else - like on the web?)");
-} else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
+} else  if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
  if (ENVIRONMENT_IS_WORKER) {
   scriptDirectory = self.location.href;
  } else if (typeof document != "undefined" && document.currentScript) {
@@ -146,7 +146,7 @@ if (ENVIRONMENT_IS_NODE) {
    xhr.send(null);
   };
  }
-} else {
+} else  {
  throw new Error("environment detection error");
 }
 
@@ -237,7 +237,9 @@ var EXITSTATUS;
  }
 }
 
-var /** @type {!Int8Array} */ HEAP8, /** @type {!Uint8Array} */ HEAPU8, /** @type {!Int16Array} */ HEAP16, /** @type {!Uint16Array} */ HEAPU16, /** @type {!Int32Array} */ HEAP32, /** @type {!Uint32Array} */ HEAPU32, /** @type {!Float32Array} */ HEAPF32, /** @type {!Float64Array} */ HEAPF64;
+var /** @type {!Int8Array} */ HEAP8, /** @type {!Uint8Array} */ HEAPU8, /** @type {!Int16Array} */ HEAP16, /** @type {!Uint16Array} */ HEAPU16, /** @type {!Int32Array} */ HEAP32, /** @type {!Uint32Array} */ HEAPU32, /** @type {!Float32Array} */ HEAPF32, /* BigInt64Array type is not correctly defined in closure
+/** not-@type {!BigInt64Array} */ HEAP64, /* BigUInt64Array type is not correctly defined in closure
+/** not-t@type {!BigUint64Array} */ HEAPU64, /** @type {!Float64Array} */ HEAPF64;
 
 function updateMemoryViews() {
  var b = wasmMemory.buffer;
@@ -249,6 +251,8 @@ function updateMemoryViews() {
  Module["HEAPU32"] = HEAPU32 = new Uint32Array(b);
  Module["HEAPF32"] = HEAPF32 = new Float32Array(b);
  Module["HEAPF64"] = HEAPF64 = new Float64Array(b);
+ Module["HEAP64"] = HEAP64 = new BigInt64Array(b);
+ Module["HEAPU64"] = HEAPU64 = new BigUint64Array(b);
 }
 
 assert(!Module["STACK_SIZE"], "STACK_SIZE can no longer be set at runtime.  Use -sSTACK_SIZE at link time");
@@ -265,9 +269,9 @@ function writeStackCookie() {
  if (max == 0) {
   max += 4;
  }
- HEAPU32[((max) >>> 2) >>> 0] = 34821223;
- HEAPU32[(((max) + (4)) >>> 2) >>> 0] = 2310721022;
- HEAPU32[((0) >>> 2) >>> 0] = 1668509029;
+ HEAPU32[((max) / 4)] = 34821223;
+ HEAPU32[(((max) + (4)) / 4)] = 2310721022;
+ HEAPU32[((0) / 4)] = 1668509029;
 }
 
 function checkStackCookie() {
@@ -276,12 +280,12 @@ function checkStackCookie() {
  if (max == 0) {
   max += 4;
  }
- var cookie1 = HEAPU32[((max) >>> 2) >>> 0];
- var cookie2 = HEAPU32[(((max) + (4)) >>> 2) >>> 0];
+ var cookie1 = HEAPU32[((max) / 4)];
+ var cookie2 = HEAPU32[(((max) + (4)) / 4)];
  if (cookie1 != 34821223 || cookie2 != 2310721022) {
   abort(`Stack overflow! Stack cookie has been overwritten at ${ptrToString(max)}, expected hex dwords 0x89BACDFE and 0x2135467, but received ${ptrToString(cookie2)} ${ptrToString(cookie1)}`);
  }
- if (HEAPU32[((0) >>> 2) >>> 0] != 1668509029) /* 'emsc' */ {
+ if (HEAPU32[((0) / 4)] != 1668509029) /* 'emsc' */ {
   abort("Runtime error: The application has corrupted its heap memory area (address zero)!");
  }
 }
@@ -508,7 +512,7 @@ function instantiateArrayBuffer(binaryFile, imports, receiver) {
 }
 
 function instantiateAsync(binary, binaryFile, imports, callback) {
- if (!binary && typeof WebAssembly.instantiateStreaming == "function" && !isDataURI(binaryFile) && !isFileURI(binaryFile) && !ENVIRONMENT_IS_NODE && typeof fetch == "function") {
+ if (!binary && typeof WebAssembly.instantiateStreaming == "function" && !isDataURI(binaryFile) &&  !isFileURI(binaryFile) &&  !ENVIRONMENT_IS_NODE && typeof fetch == "function") {
   return fetch(binaryFile, {
    credentials: "same-origin"
   }).then(response => {
@@ -566,10 +570,6 @@ function createWasm() {
  return {};
 }
 
-var tempDouble;
-
-var tempI64;
-
 function legacyModuleProp(prop, newName, incoming = true) {
  if (!Object.getOwnPropertyDescriptor(Module, prop)) {
   Object.defineProperty(Module, prop, {
@@ -589,7 +589,7 @@ function ignoredModuleProp(prop) {
 }
 
 function isExportedByForceFilesystem(name) {
- return name === "FS_createPath" || name === "FS_createDataFile" || name === "FS_createPreloadedFile" || name === "FS_unlink" || name === "addRunDependency" || name === "FS_createLazyFile" || name === "FS_createDevice" || name === "removeRunDependency";
+ return name === "FS_createPath" || name === "FS_createDataFile" || name === "FS_createPreloadedFile" || name === "FS_unlink" || name === "addRunDependency" ||  name === "FS_createLazyFile" || name === "FS_createDevice" || name === "removeRunDependency";
 }
 
 function missingGlobal(sym, msg) {
@@ -645,35 +645,6 @@ function unexportedRuntimeSymbol(sym) {
  }
 }
 
-var ASM_CONSTS = {
- 1178422: ($0, $1, $2, $3) => {
-  if (typeof Module == "undefined" || !Module.MountedFiles) {
-   return 1;
-  }
-  let fileName = UTF8ToString($0 >>> 0);
-  if (fileName.startsWith("./")) {
-   fileName = fileName.substring(2);
-  }
-  const fileData = Module.MountedFiles.get(fileName);
-  if (!fileData) {
-   return 2;
-  }
-  const offset = $1 >>> 0;
-  const length = $2 >>> 0;
-  const buffer = $3 >>> 0;
-  if (offset + length > fileData.byteLength) {
-   return 3;
-  }
-  try {
-   HEAPU8.set(fileData.subarray(offset, offset + length), buffer >>> 0);
-   return 0;
-  } catch {
-   return 4;
-  }
- },
- 1178923: () => (typeof wasmOffsetConverter !== "undefined")
-};
-
 function __asyncjs__weavedrive_open(c_filename, mode) {
  return Asyncify.handleAsync(async () => {
   const filename = UTF8ToString(Number(c_filename));
@@ -721,11 +692,11 @@ var warnOnce = text => {
  }
 };
 
-var convertI32PairToI53Checked = (lo, hi) => {
- assert(lo == (lo >>> 0) || lo == (lo | 0));
- assert(hi === (hi | 0));
- return ((hi + 2097152) >>> 0 < 4194305 - !!lo) ? (lo >>> 0) + hi * 4294967296 : NaN;
-};
+var MAX_INT53 = 9007199254740992;
+
+var MIN_INT53 = -9007199254740992;
+
+var bigintToI53Checked = num => (num < MIN_INT53 || num > MAX_INT53) ? NaN : Number(num);
 
 var UTF8Decoder = typeof TextDecoder != "undefined" ? new TextDecoder("utf8") : undefined;
 
@@ -738,7 +709,6 @@ var UTF8Decoder = typeof TextDecoder != "undefined" ? new TextDecoder("utf8") : 
      * @param {number=} maxBytesToRead
      * @return {string}
      */ var UTF8ArrayToString = (heapOrArray, idx, maxBytesToRead) => {
- idx >>>= 0;
  var endIdx = idx + maxBytesToRead;
  var endPtr = idx;
  while (heapOrArray[endPtr] && !(endPtr >= endIdx)) ++endPtr;
@@ -790,47 +760,46 @@ var UTF8Decoder = typeof TextDecoder != "undefined" ? new TextDecoder("utf8") : 
      * @return {string}
      */ var UTF8ToString = (ptr, maxBytesToRead) => {
  assert(typeof ptr == "number", `UTF8ToString expects a number (got ${typeof ptr})`);
- ptr >>>= 0;
  return ptr ? UTF8ArrayToString(HEAPU8, ptr, maxBytesToRead) : "";
 };
 
 function ___assert_fail(condition, filename, line, func) {
- condition >>>= 0;
- filename >>>= 0;
- func >>>= 0;
+ condition = bigintToI53Checked(condition);
+ filename = bigintToI53Checked(filename);
+ func = bigintToI53Checked(func);
  abort(`Assertion failed: ${UTF8ToString(condition)}, at: ` + [ filename ? UTF8ToString(filename) : "unknown filename", line, func ? UTF8ToString(func) : "unknown function" ]);
 }
 
 class ExceptionInfo {
  constructor(excPtr) {
   this.excPtr = excPtr;
-  this.ptr = excPtr - 24;
+  this.ptr = excPtr - 48;
  }
  set_type(type) {
-  HEAPU32[(((this.ptr) + (4)) >>> 2) >>> 0] = type;
+  HEAPU64[(((this.ptr) + (8)) / 8)] = BigInt(type);
  }
  get_type() {
-  return HEAPU32[(((this.ptr) + (4)) >>> 2) >>> 0];
+  return Number(HEAPU64[(((this.ptr) + (8)) / 8)]);
  }
  set_destructor(destructor) {
-  HEAPU32[(((this.ptr) + (8)) >>> 2) >>> 0] = destructor;
+  HEAPU64[(((this.ptr) + (16)) / 8)] = BigInt(destructor);
  }
  get_destructor() {
-  return HEAPU32[(((this.ptr) + (8)) >>> 2) >>> 0];
+  return Number(HEAPU64[(((this.ptr) + (16)) / 8)]);
  }
  set_caught(caught) {
   caught = caught ? 1 : 0;
-  HEAP8[(this.ptr) + (12) >>> 0] = caught;
+  HEAP8[(this.ptr) + (24)] = caught;
  }
  get_caught() {
-  return HEAP8[(this.ptr) + (12) >>> 0] != 0;
+  return HEAP8[(this.ptr) + (24)] != 0;
  }
  set_rethrown(rethrown) {
   rethrown = rethrown ? 1 : 0;
-  HEAP8[(this.ptr) + (13) >>> 0] = rethrown;
+  HEAP8[(this.ptr) + (25)] = rethrown;
  }
  get_rethrown() {
-  return HEAP8[(this.ptr) + (13) >>> 0] != 0;
+  return HEAP8[(this.ptr) + (25)] != 0;
  }
  init(type, destructor) {
   this.set_adjusted_ptr(0);
@@ -838,15 +807,15 @@ class ExceptionInfo {
   this.set_destructor(destructor);
  }
  set_adjusted_ptr(adjustedPtr) {
-  HEAPU32[(((this.ptr) + (16)) >>> 2) >>> 0] = adjustedPtr;
+  HEAPU64[(((this.ptr) + (32)) / 8)] = BigInt(adjustedPtr);
  }
  get_adjusted_ptr() {
-  return HEAPU32[(((this.ptr) + (16)) >>> 2) >>> 0];
+  return Number(HEAPU64[(((this.ptr) + (32)) / 8)]);
  }
  get_exception_ptr() {
   var isPointer = ___cxa_is_pointer_type(this.get_type());
   if (isPointer) {
-   return HEAPU32[((this.excPtr) >>> 2) >>> 0];
+   return Number(HEAPU64[((this.excPtr) / 8)]);
   }
   var adjusted = this.get_adjusted_ptr();
   if (adjusted !== 0) return adjusted;
@@ -859,9 +828,9 @@ var exceptionLast = 0;
 var uncaughtExceptionCount = 0;
 
 function ___cxa_throw(ptr, type, destructor) {
- ptr >>>= 0;
- type >>>= 0;
- destructor >>>= 0;
+ ptr = bigintToI53Checked(ptr);
+ type = bigintToI53Checked(type);
+ destructor = bigintToI53Checked(destructor);
  var info = new ExceptionInfo(ptr);
  info.init(type, destructor);
  exceptionLast = ptr;
@@ -940,7 +909,7 @@ var initRandomFill = () => {
     return view => crypto_module["randomFillSync"](view);
    }
    var randomBytes = crypto_module["randomBytes"];
-   return view => (view.set(randomBytes(view.byteLength)), view);
+   return view => (view.set(randomBytes(view.byteLength)),  view);
   } catch (e) {}
  }
  abort("no cryptographic support found for randomDevice. consider polyfilling it if you want to use something insecure like Math.random(), e.g. put this in a --pre-js: var crypto = { getRandomValues: (array) => { for (var i = 0; i < array.length; i++) array[i] = (Math.random()*256)|0 } };");
@@ -1019,7 +988,6 @@ var lengthBytesUTF8 = str => {
 };
 
 var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
- outIdx >>>= 0;
  assert(typeof str === "string", `stringToUTF8Array expects a string (got ${typeof str})`);
  if (!(maxBytesToWrite > 0)) return 0;
  var startIdx = outIdx;
@@ -1032,26 +1000,26 @@ var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
   }
   if (u <= 127) {
    if (outIdx >= endIdx) break;
-   heap[outIdx++ >>> 0] = u;
+   heap[outIdx++] = u;
   } else if (u <= 2047) {
    if (outIdx + 1 >= endIdx) break;
-   heap[outIdx++ >>> 0] = 192 | (u >> 6);
-   heap[outIdx++ >>> 0] = 128 | (u & 63);
+   heap[outIdx++] = 192 | (u >> 6);
+   heap[outIdx++] = 128 | (u & 63);
   } else if (u <= 65535) {
    if (outIdx + 2 >= endIdx) break;
-   heap[outIdx++ >>> 0] = 224 | (u >> 12);
-   heap[outIdx++ >>> 0] = 128 | ((u >> 6) & 63);
-   heap[outIdx++ >>> 0] = 128 | (u & 63);
+   heap[outIdx++] = 224 | (u >> 12);
+   heap[outIdx++] = 128 | ((u >> 6) & 63);
+   heap[outIdx++] = 128 | (u & 63);
   } else {
    if (outIdx + 3 >= endIdx) break;
    if (u > 1114111) warnOnce("Invalid Unicode code point " + ptrToString(u) + " encountered when serializing a JS string to a UTF-8 string in wasm memory! (Valid unicode code points should be in range 0-0x10FFFF).");
-   heap[outIdx++ >>> 0] = 240 | (u >> 18);
-   heap[outIdx++ >>> 0] = 128 | ((u >> 12) & 63);
-   heap[outIdx++ >>> 0] = 128 | ((u >> 6) & 63);
-   heap[outIdx++ >>> 0] = 128 | (u & 63);
+   heap[outIdx++] = 240 | (u >> 18);
+   heap[outIdx++] = 128 | ((u >> 12) & 63);
+   heap[outIdx++] = 128 | ((u >> 6) & 63);
+   heap[outIdx++] = 128 | (u & 63);
   }
  }
- heap[outIdx >>> 0] = 0;
+ heap[outIdx] = 0;
  return outIdx - startIdx;
 };
 
@@ -1527,7 +1495,7 @@ var MEMFS = {
     if (!ptr) {
      throw new FS.ErrnoError(48);
     }
-    HEAP8.set(contents, ptr >>> 0);
+    HEAP8.set(contents, ptr);
    }
    return {
     ptr: ptr,
@@ -2171,7 +2139,7 @@ var FS = {
   if (FS.isLink(node.mode)) {
    return 32;
   } else if (FS.isDir(node.mode)) {
-   if (FS.flagsToPermissionString(flags) !== "r" || (flags & 512)) {
+   if (FS.flagsToPermissionString(flags) !== "r" ||  (flags & 512)) {
     return 31;
    }
   }
@@ -3371,33 +3339,25 @@ var SYSCALLS = {
  },
  doStat(func, path, buf) {
   var stat = func(path);
-  HEAP32[((buf) >>> 2) >>> 0] = stat.dev;
-  HEAP32[(((buf) + (4)) >>> 2) >>> 0] = stat.mode;
-  HEAPU32[(((buf) + (8)) >>> 2) >>> 0] = stat.nlink;
-  HEAP32[(((buf) + (12)) >>> 2) >>> 0] = stat.uid;
-  HEAP32[(((buf) + (16)) >>> 2) >>> 0] = stat.gid;
-  HEAP32[(((buf) + (20)) >>> 2) >>> 0] = stat.rdev;
-  (tempI64 = [ stat.size >>> 0, (tempDouble = stat.size, (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0) ], 
-  HEAP32[(((buf) + (24)) >>> 2) >>> 0] = tempI64[0], HEAP32[(((buf) + (28)) >>> 2) >>> 0] = tempI64[1]);
-  HEAP32[(((buf) + (32)) >>> 2) >>> 0] = 4096;
-  HEAP32[(((buf) + (36)) >>> 2) >>> 0] = stat.blocks;
+  HEAP32[((buf) / 4)] = stat.dev;
+  HEAP32[(((buf) + (4)) / 4)] = stat.mode;
+  HEAPU64[(((buf) + (8)) / 8)] = BigInt(stat.nlink);
+  HEAP32[(((buf) + (16)) / 4)] = stat.uid;
+  HEAP32[(((buf) + (20)) / 4)] = stat.gid;
+  HEAP32[(((buf) + (24)) / 4)] = stat.rdev;
+  HEAP64[(((buf) + (32)) / 8)] = BigInt(stat.size);
+  HEAP32[(((buf) + (40)) / 4)] = 4096;
+  HEAP32[(((buf) + (44)) / 4)] = stat.blocks;
   var atime = stat.atime.getTime();
   var mtime = stat.mtime.getTime();
   var ctime = stat.ctime.getTime();
-  (tempI64 = [ Math.floor(atime / 1e3) >>> 0, (tempDouble = Math.floor(atime / 1e3), 
-  (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0) ], 
-  HEAP32[(((buf) + (40)) >>> 2) >>> 0] = tempI64[0], HEAP32[(((buf) + (44)) >>> 2) >>> 0] = tempI64[1]);
-  HEAPU32[(((buf) + (48)) >>> 2) >>> 0] = (atime % 1e3) * 1e3;
-  (tempI64 = [ Math.floor(mtime / 1e3) >>> 0, (tempDouble = Math.floor(mtime / 1e3), 
-  (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0) ], 
-  HEAP32[(((buf) + (56)) >>> 2) >>> 0] = tempI64[0], HEAP32[(((buf) + (60)) >>> 2) >>> 0] = tempI64[1]);
-  HEAPU32[(((buf) + (64)) >>> 2) >>> 0] = (mtime % 1e3) * 1e3;
-  (tempI64 = [ Math.floor(ctime / 1e3) >>> 0, (tempDouble = Math.floor(ctime / 1e3), 
-  (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0) ], 
-  HEAP32[(((buf) + (72)) >>> 2) >>> 0] = tempI64[0], HEAP32[(((buf) + (76)) >>> 2) >>> 0] = tempI64[1]);
-  HEAPU32[(((buf) + (80)) >>> 2) >>> 0] = (ctime % 1e3) * 1e3;
-  (tempI64 = [ stat.ino >>> 0, (tempDouble = stat.ino, (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0) ], 
-  HEAP32[(((buf) + (88)) >>> 2) >>> 0] = tempI64[0], HEAP32[(((buf) + (92)) >>> 2) >>> 0] = tempI64[1]);
+  HEAP64[(((buf) + (48)) / 8)] = BigInt(Math.floor(atime / 1e3));
+  HEAPU64[(((buf) + (56)) / 8)] = BigInt((atime % 1e3) * 1e3);
+  HEAP64[(((buf) + (64)) / 8)] = BigInt(Math.floor(mtime / 1e3));
+  HEAPU64[(((buf) + (72)) / 8)] = BigInt((mtime % 1e3) * 1e3);
+  HEAP64[(((buf) + (80)) / 8)] = BigInt(Math.floor(ctime / 1e3));
+  HEAPU64[(((buf) + (88)) / 8)] = BigInt((ctime % 1e3) * 1e3);
+  HEAP64[(((buf) + (96)) / 8)] = BigInt(stat.ino);
   return 0;
  },
  doMsync(addr, stream, len, flags, offset) {
@@ -3422,7 +3382,7 @@ var SYSCALLS = {
 };
 
 function ___syscall_chmod(path, mode) {
- path >>>= 0;
+ path = bigintToI53Checked(path);
  try {
   path = SYSCALLS.getStr(path);
   FS.chmod(path, mode);
@@ -3448,7 +3408,7 @@ function ___syscall_dup3(fd, newfd, flags) {
 }
 
 function ___syscall_faccessat(dirfd, path, amode, flags) {
- path >>>= 0;
+ path = bigintToI53Checked(path);
  try {
   path = SYSCALLS.getStr(path);
   assert(flags === 0);
@@ -3497,17 +3457,22 @@ function ___syscall_fchown32(fd, owner, group) {
  }
 }
 
-/** @suppress {duplicate } */ function syscallGetVarargI() {
+function syscallGetVarargP() {
  assert(SYSCALLS.varargs != undefined);
- var ret = HEAP32[((+SYSCALLS.varargs) >>> 2) >>> 0];
+ var ret = Number(HEAPU64[((SYSCALLS.varargs) / 8)]);
+ SYSCALLS.varargs += 8;
+ return ret;
+}
+
+function syscallGetVarargI() {
+ assert(SYSCALLS.varargs != undefined);
+ var ret = HEAP32[((+SYSCALLS.varargs) / 4)];
  SYSCALLS.varargs += 4;
  return ret;
 }
 
-var syscallGetVarargP = syscallGetVarargI;
-
 function ___syscall_fcntl64(fd, cmd, varargs) {
- varargs >>>= 0;
+ varargs = bigintToI53Checked(varargs);
  SYSCALLS.varargs = varargs;
  try {
   var stream = SYSCALLS.getStreamFromFD(fd);
@@ -3540,16 +3505,16 @@ function ___syscall_fcntl64(fd, cmd, varargs) {
     return 0;
    }
 
-  case 12:
+  case 5:
    {
     var arg = syscallGetVarargP();
     var offset = 0;
-    HEAP16[(((arg) + (offset)) >>> 1) >>> 0] = 2;
+    HEAP16[(((arg) + (offset)) / 2)] = 2;
     return 0;
    }
 
-  case 13:
-  case 14:
+  case 6:
+  case 7:
    return 0;
   }
   return -28;
@@ -3560,7 +3525,7 @@ function ___syscall_fcntl64(fd, cmd, varargs) {
 }
 
 function ___syscall_fstat64(fd, buf) {
- buf >>>= 0;
+ buf = bigintToI53Checked(buf);
  try {
   var stream = SYSCALLS.getStreamFromFD(fd);
   return SYSCALLS.doStat(FS.stat, stream.path, buf);
@@ -3570,8 +3535,8 @@ function ___syscall_fstat64(fd, buf) {
  }
 }
 
-function ___syscall_ftruncate64(fd, length_low, length_high) {
- var length = convertI32PairToI53Checked(length_low, length_high);
+function ___syscall_ftruncate64(fd, length) {
+ length = bigintToI53Checked(length);
  try {
   if (isNaN(length)) return 61;
   FS.ftruncate(fd, length);
@@ -3588,8 +3553,8 @@ var stringToUTF8 = (str, outPtr, maxBytesToWrite) => {
 };
 
 function ___syscall_getcwd(buf, size) {
- buf >>>= 0;
- size >>>= 0;
+ buf = bigintToI53Checked(buf);
+ size = bigintToI53Checked(size);
  try {
   if (size === 0) return -28;
   var cwd = FS.cwd();
@@ -3603,56 +3568,8 @@ function ___syscall_getcwd(buf, size) {
  }
 }
 
-function ___syscall_getdents64(fd, dirp, count) {
- dirp >>>= 0;
- count >>>= 0;
- try {
-  var stream = SYSCALLS.getStreamFromFD(fd);
-  stream.getdents ||= FS.readdir(stream.path);
-  var struct_size = 280;
-  var pos = 0;
-  var off = FS.llseek(stream, 0, 1);
-  var idx = Math.floor(off / struct_size);
-  while (idx < stream.getdents.length && pos + struct_size <= count) {
-   var id;
-   var type;
-   var name = stream.getdents[idx];
-   if (name === ".") {
-    id = stream.node.id;
-    type = 4;
-   } else if (name === "..") {
-    var lookup = FS.lookupPath(stream.path, {
-     parent: true
-    });
-    id = lookup.node.id;
-    type = 4;
-   } else {
-    var child = FS.lookupNode(stream.node, name);
-    id = child.id;
-    type = FS.isChrdev(child.mode) ? 2 : FS.isDir(child.mode) ? 4 : FS.isLink(child.mode) ? 10 : 8;
-   }
-   assert(id);
-   (tempI64 = [ id >>> 0, (tempDouble = id, (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0) ], 
-   HEAP32[((dirp + pos) >>> 2) >>> 0] = tempI64[0], HEAP32[(((dirp + pos) + (4)) >>> 2) >>> 0] = tempI64[1]);
-   (tempI64 = [ (idx + 1) * struct_size >>> 0, (tempDouble = (idx + 1) * struct_size, 
-   (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0) ], 
-   HEAP32[(((dirp + pos) + (8)) >>> 2) >>> 0] = tempI64[0], HEAP32[(((dirp + pos) + (12)) >>> 2) >>> 0] = tempI64[1]);
-   HEAP16[(((dirp + pos) + (16)) >>> 1) >>> 0] = 280;
-   HEAP8[(dirp + pos) + (18) >>> 0] = type;
-   stringToUTF8(name, dirp + pos + 19, 256);
-   pos += struct_size;
-   idx += 1;
-  }
-  FS.llseek(stream, idx * struct_size, 0);
-  return pos;
- } catch (e) {
-  if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
-  return -e.errno;
- }
-}
-
 function ___syscall_ioctl(fd, op, varargs) {
- varargs >>>= 0;
+ varargs = bigintToI53Checked(varargs);
  SYSCALLS.varargs = varargs;
  try {
   var stream = SYSCALLS.getStreamFromFD(fd);
@@ -3669,12 +3586,12 @@ function ___syscall_ioctl(fd, op, varargs) {
     if (stream.tty.ops.ioctl_tcgets) {
      var termios = stream.tty.ops.ioctl_tcgets(stream);
      var argp = syscallGetVarargP();
-     HEAP32[((argp) >>> 2) >>> 0] = termios.c_iflag || 0;
-     HEAP32[(((argp) + (4)) >>> 2) >>> 0] = termios.c_oflag || 0;
-     HEAP32[(((argp) + (8)) >>> 2) >>> 0] = termios.c_cflag || 0;
-     HEAP32[(((argp) + (12)) >>> 2) >>> 0] = termios.c_lflag || 0;
+     HEAP32[((argp) / 4)] = termios.c_iflag || 0;
+     HEAP32[(((argp) + (4)) / 4)] = termios.c_oflag || 0;
+     HEAP32[(((argp) + (8)) / 4)] = termios.c_cflag || 0;
+     HEAP32[(((argp) + (12)) / 4)] = termios.c_lflag || 0;
      for (var i = 0; i < 32; i++) {
-      HEAP8[(argp + i) + (17) >>> 0] = termios.c_cc[i] || 0;
+      HEAP8[(argp + i) + (17)] = termios.c_cc[i] || 0;
      }
      return 0;
     }
@@ -3696,13 +3613,13 @@ function ___syscall_ioctl(fd, op, varargs) {
     if (!stream.tty) return -59;
     if (stream.tty.ops.ioctl_tcsets) {
      var argp = syscallGetVarargP();
-     var c_iflag = HEAP32[((argp) >>> 2) >>> 0];
-     var c_oflag = HEAP32[(((argp) + (4)) >>> 2) >>> 0];
-     var c_cflag = HEAP32[(((argp) + (8)) >>> 2) >>> 0];
-     var c_lflag = HEAP32[(((argp) + (12)) >>> 2) >>> 0];
+     var c_iflag = HEAP32[((argp) / 4)];
+     var c_oflag = HEAP32[(((argp) + (4)) / 4)];
+     var c_cflag = HEAP32[(((argp) + (8)) / 4)];
+     var c_lflag = HEAP32[(((argp) + (12)) / 4)];
      var c_cc = [];
      for (var i = 0; i < 32; i++) {
-      c_cc.push(HEAP8[(argp + i) + (17) >>> 0]);
+      c_cc.push(HEAP8[(argp + i) + (17)]);
      }
      return stream.tty.ops.ioctl_tcsets(stream.tty, op, {
       c_iflag: c_iflag,
@@ -3719,7 +3636,7 @@ function ___syscall_ioctl(fd, op, varargs) {
    {
     if (!stream.tty) return -59;
     var argp = syscallGetVarargP();
-    HEAP32[((argp) >>> 2) >>> 0] = 0;
+    HEAP32[((argp) / 4)] = 0;
     return 0;
    }
 
@@ -3741,8 +3658,8 @@ function ___syscall_ioctl(fd, op, varargs) {
     if (stream.tty.ops.ioctl_tiocgwinsz) {
      var winsize = stream.tty.ops.ioctl_tiocgwinsz(stream.tty);
      var argp = syscallGetVarargP();
-     HEAP16[((argp) >>> 1) >>> 0] = winsize[0];
-     HEAP16[(((argp) + (2)) >>> 1) >>> 0] = winsize[1];
+     HEAP16[((argp) / 2)] = winsize[0];
+     HEAP16[(((argp) + (2)) / 2)] = winsize[1];
     }
     return 0;
    }
@@ -3762,15 +3679,15 @@ function ___syscall_ioctl(fd, op, varargs) {
   default:
    return -28;
   }
- } catch (e) {
+ }  catch (e) {
   if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
   return -e.errno;
  }
 }
 
 function ___syscall_lstat64(path, buf) {
- path >>>= 0;
- buf >>>= 0;
+ path = bigintToI53Checked(path);
+ buf = bigintToI53Checked(buf);
  try {
   path = SYSCALLS.getStr(path);
   return SYSCALLS.doStat(FS.lstat, path, buf);
@@ -3781,7 +3698,7 @@ function ___syscall_lstat64(path, buf) {
 }
 
 function ___syscall_mkdirat(dirfd, path, mode) {
- path >>>= 0;
+ path = bigintToI53Checked(path);
  try {
   path = SYSCALLS.getStr(path);
   path = SYSCALLS.calculateAt(dirfd, path);
@@ -3796,8 +3713,8 @@ function ___syscall_mkdirat(dirfd, path, mode) {
 }
 
 function ___syscall_newfstatat(dirfd, path, buf, flags) {
- path >>>= 0;
- buf >>>= 0;
+ path = bigintToI53Checked(path);
+ buf = bigintToI53Checked(buf);
  try {
   path = SYSCALLS.getStr(path);
   var nofollow = flags & 256;
@@ -3813,8 +3730,8 @@ function ___syscall_newfstatat(dirfd, path, buf, flags) {
 }
 
 function ___syscall_openat(dirfd, path, flags, varargs) {
- path >>>= 0;
- varargs >>>= 0;
+ path = bigintToI53Checked(path);
+ varargs = bigintToI53Checked(varargs);
  SYSCALLS.varargs = varargs;
  try {
   path = SYSCALLS.getStr(path);
@@ -3828,18 +3745,18 @@ function ___syscall_openat(dirfd, path, flags, varargs) {
 }
 
 function ___syscall_readlinkat(dirfd, path, buf, bufsize) {
- path >>>= 0;
- buf >>>= 0;
- bufsize >>>= 0;
+ path = bigintToI53Checked(path);
+ buf = bigintToI53Checked(buf);
+ bufsize = bigintToI53Checked(bufsize);
  try {
   path = SYSCALLS.getStr(path);
   path = SYSCALLS.calculateAt(dirfd, path);
   if (bufsize <= 0) return -28;
   var ret = FS.readlink(path);
   var len = Math.min(bufsize, lengthBytesUTF8(ret));
-  var endChar = HEAP8[buf + len >>> 0];
+  var endChar = HEAP8[buf + len];
   stringToUTF8(ret, buf, bufsize + 1);
-  HEAP8[buf + len >>> 0] = endChar;
+  HEAP8[buf + len] = endChar;
   return len;
  } catch (e) {
   if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
@@ -3848,8 +3765,8 @@ function ___syscall_readlinkat(dirfd, path, buf, bufsize) {
 }
 
 function ___syscall_renameat(olddirfd, oldpath, newdirfd, newpath) {
- oldpath >>>= 0;
- newpath >>>= 0;
+ oldpath = bigintToI53Checked(oldpath);
+ newpath = bigintToI53Checked(newpath);
  try {
   oldpath = SYSCALLS.getStr(oldpath);
   newpath = SYSCALLS.getStr(newpath);
@@ -3864,7 +3781,7 @@ function ___syscall_renameat(olddirfd, oldpath, newdirfd, newpath) {
 }
 
 function ___syscall_rmdir(path) {
- path >>>= 0;
+ path = bigintToI53Checked(path);
  try {
   path = SYSCALLS.getStr(path);
   FS.rmdir(path);
@@ -3876,8 +3793,8 @@ function ___syscall_rmdir(path) {
 }
 
 function ___syscall_stat64(path, buf) {
- path >>>= 0;
- buf >>>= 0;
+ path = bigintToI53Checked(path);
+ buf = bigintToI53Checked(buf);
  try {
   path = SYSCALLS.getStr(path);
   return SYSCALLS.doStat(FS.stat, path, buf);
@@ -3888,7 +3805,7 @@ function ___syscall_stat64(path, buf) {
 }
 
 function ___syscall_unlinkat(dirfd, path, flags) {
- path >>>= 0;
+ path = bigintToI53Checked(path);
  try {
   path = SYSCALLS.getStr(path);
   path = SYSCALLS.calculateAt(dirfd, path);
@@ -3906,11 +3823,11 @@ function ___syscall_unlinkat(dirfd, path, flags) {
  }
 }
 
-var readI53FromI64 = ptr => HEAPU32[((ptr) >>> 2) >>> 0] + HEAP32[(((ptr) + (4)) >>> 2) >>> 0] * 4294967296;
+var readI53FromI64 = ptr => HEAPU32[((ptr) / 4)] + HEAP32[(((ptr) + (4)) / 4)] * 4294967296;
 
 function ___syscall_utimensat(dirfd, path, times, flags) {
- path >>>= 0;
- times >>>= 0;
+ path = bigintToI53Checked(path);
+ times = bigintToI53Checked(times);
  try {
   path = SYSCALLS.getStr(path);
   assert(flags === 0);
@@ -3920,11 +3837,11 @@ function ___syscall_utimensat(dirfd, path, times, flags) {
    var mtime = atime;
   } else {
    var seconds = readI53FromI64(times);
-   var nanoseconds = HEAP32[(((times) + (8)) >>> 2) >>> 0];
+   var nanoseconds = HEAP32[(((times) + (8)) / 4)];
    atime = (seconds * 1e3) + (nanoseconds / (1e3 * 1e3));
    times += 16;
    seconds = readI53FromI64(times);
-   nanoseconds = HEAP32[(((times) + (8)) >>> 2) >>> 0];
+   nanoseconds = HEAP32[(((times) + (8)) / 4)];
    mtime = (seconds * 1e3) + (nanoseconds / (1e3 * 1e3));
   }
   FS.utime(path, atime, mtime);
@@ -3944,14 +3861,14 @@ var nowIsMonotonic = 1;
 var __emscripten_get_now_is_monotonic = () => nowIsMonotonic;
 
 function __emscripten_memcpy_js(dest, src, num) {
- dest >>>= 0;
- src >>>= 0;
- num >>>= 0;
- return HEAPU8.copyWithin(dest >>> 0, src >>> 0, src + num >>> 0);
+ dest = bigintToI53Checked(dest);
+ src = bigintToI53Checked(src);
+ num = bigintToI53Checked(num);
+ return HEAPU8.copyWithin(dest, src, src + num);
 }
 
 function __emscripten_system(command) {
- command >>>= 0;
+ command = bigintToI53Checked(command);
  if (ENVIRONMENT_IS_NODE) {
   if (!command) return 1;
   var cmdstr = UTF8ToString(command);
@@ -4000,20 +3917,20 @@ var __emscripten_throw_longjmp = () => {
  throw Infinity;
 };
 
-function __gmtime_js(time_low, time_high, tmPtr) {
- var time = convertI32PairToI53Checked(time_low, time_high);
- tmPtr >>>= 0;
+function __gmtime_js(time, tmPtr) {
+ time = bigintToI53Checked(time);
+ tmPtr = bigintToI53Checked(tmPtr);
  var date = new Date(time * 1e3);
- HEAP32[((tmPtr) >>> 2) >>> 0] = date.getUTCSeconds();
- HEAP32[(((tmPtr) + (4)) >>> 2) >>> 0] = date.getUTCMinutes();
- HEAP32[(((tmPtr) + (8)) >>> 2) >>> 0] = date.getUTCHours();
- HEAP32[(((tmPtr) + (12)) >>> 2) >>> 0] = date.getUTCDate();
- HEAP32[(((tmPtr) + (16)) >>> 2) >>> 0] = date.getUTCMonth();
- HEAP32[(((tmPtr) + (20)) >>> 2) >>> 0] = date.getUTCFullYear() - 1900;
- HEAP32[(((tmPtr) + (24)) >>> 2) >>> 0] = date.getUTCDay();
+ HEAP32[((tmPtr) / 4)] = date.getUTCSeconds();
+ HEAP32[(((tmPtr) + (4)) / 4)] = date.getUTCMinutes();
+ HEAP32[(((tmPtr) + (8)) / 4)] = date.getUTCHours();
+ HEAP32[(((tmPtr) + (12)) / 4)] = date.getUTCDate();
+ HEAP32[(((tmPtr) + (16)) / 4)] = date.getUTCMonth();
+ HEAP32[(((tmPtr) + (20)) / 4)] = date.getUTCFullYear() - 1900;
+ HEAP32[(((tmPtr) + (24)) / 4)] = date.getUTCDay();
  var start = Date.UTC(date.getUTCFullYear(), 0, 1, 0, 0, 0, 0);
  var yday = ((date.getTime() - start) / (1e3 * 60 * 60 * 24)) | 0;
- HEAP32[(((tmPtr) + (28)) >>> 2) >>> 0] = yday;
+ HEAP32[(((tmPtr) + (28)) / 4)] = yday;
 }
 
 var isLeapYear = year => year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
@@ -4029,69 +3946,66 @@ var ydayFromDate = date => {
  return yday;
 };
 
-function __localtime_js(time_low, time_high, tmPtr) {
- var time = convertI32PairToI53Checked(time_low, time_high);
- tmPtr >>>= 0;
+function __localtime_js(time, tmPtr) {
+ time = bigintToI53Checked(time);
+ tmPtr = bigintToI53Checked(tmPtr);
  var date = new Date(time * 1e3);
- HEAP32[((tmPtr) >>> 2) >>> 0] = date.getSeconds();
- HEAP32[(((tmPtr) + (4)) >>> 2) >>> 0] = date.getMinutes();
- HEAP32[(((tmPtr) + (8)) >>> 2) >>> 0] = date.getHours();
- HEAP32[(((tmPtr) + (12)) >>> 2) >>> 0] = date.getDate();
- HEAP32[(((tmPtr) + (16)) >>> 2) >>> 0] = date.getMonth();
- HEAP32[(((tmPtr) + (20)) >>> 2) >>> 0] = date.getFullYear() - 1900;
- HEAP32[(((tmPtr) + (24)) >>> 2) >>> 0] = date.getDay();
+ HEAP32[((tmPtr) / 4)] = date.getSeconds();
+ HEAP32[(((tmPtr) + (4)) / 4)] = date.getMinutes();
+ HEAP32[(((tmPtr) + (8)) / 4)] = date.getHours();
+ HEAP32[(((tmPtr) + (12)) / 4)] = date.getDate();
+ HEAP32[(((tmPtr) + (16)) / 4)] = date.getMonth();
+ HEAP32[(((tmPtr) + (20)) / 4)] = date.getFullYear() - 1900;
+ HEAP32[(((tmPtr) + (24)) / 4)] = date.getDay();
  var yday = ydayFromDate(date) | 0;
- HEAP32[(((tmPtr) + (28)) >>> 2) >>> 0] = yday;
- HEAP32[(((tmPtr) + (36)) >>> 2) >>> 0] = -(date.getTimezoneOffset() * 60);
+ HEAP32[(((tmPtr) + (28)) / 4)] = yday;
+ HEAP64[(((tmPtr) + (40)) / 8)] = BigInt(-(date.getTimezoneOffset() * 60));
  var start = new Date(date.getFullYear(), 0, 1);
  var summerOffset = new Date(date.getFullYear(), 6, 1).getTimezoneOffset();
  var winterOffset = start.getTimezoneOffset();
  var dst = (summerOffset != winterOffset && date.getTimezoneOffset() == Math.min(winterOffset, summerOffset)) | 0;
- HEAP32[(((tmPtr) + (32)) >>> 2) >>> 0] = dst;
+ HEAP32[(((tmPtr) + (32)) / 4)] = dst;
 }
 
-/** @suppress {duplicate } */ var setTempRet0 = val => __emscripten_tempret_set(val);
-
 var __mktime_js = function(tmPtr) {
- tmPtr >>>= 0;
+ tmPtr = bigintToI53Checked(tmPtr);
  var ret = (() => {
-  var date = new Date(HEAP32[(((tmPtr) + (20)) >>> 2) >>> 0] + 1900, HEAP32[(((tmPtr) + (16)) >>> 2) >>> 0], HEAP32[(((tmPtr) + (12)) >>> 2) >>> 0], HEAP32[(((tmPtr) + (8)) >>> 2) >>> 0], HEAP32[(((tmPtr) + (4)) >>> 2) >>> 0], HEAP32[((tmPtr) >>> 2) >>> 0], 0);
-  var dst = HEAP32[(((tmPtr) + (32)) >>> 2) >>> 0];
+  var date = new Date(HEAP32[(((tmPtr) + (20)) / 4)] + 1900, HEAP32[(((tmPtr) + (16)) / 4)], HEAP32[(((tmPtr) + (12)) / 4)], HEAP32[(((tmPtr) + (8)) / 4)], HEAP32[(((tmPtr) + (4)) / 4)], HEAP32[((tmPtr) / 4)], 0);
+  var dst = HEAP32[(((tmPtr) + (32)) / 4)];
   var guessedOffset = date.getTimezoneOffset();
   var start = new Date(date.getFullYear(), 0, 1);
   var summerOffset = new Date(date.getFullYear(), 6, 1).getTimezoneOffset();
   var winterOffset = start.getTimezoneOffset();
   var dstOffset = Math.min(winterOffset, summerOffset);
   if (dst < 0) {
-   HEAP32[(((tmPtr) + (32)) >>> 2) >>> 0] = Number(summerOffset != winterOffset && dstOffset == guessedOffset);
+   HEAP32[(((tmPtr) + (32)) / 4)] = Number(summerOffset != winterOffset && dstOffset == guessedOffset);
   } else if ((dst > 0) != (dstOffset == guessedOffset)) {
    var nonDstOffset = Math.max(winterOffset, summerOffset);
    var trueOffset = dst > 0 ? dstOffset : nonDstOffset;
    date.setTime(date.getTime() + (trueOffset - guessedOffset) * 6e4);
   }
-  HEAP32[(((tmPtr) + (24)) >>> 2) >>> 0] = date.getDay();
+  HEAP32[(((tmPtr) + (24)) / 4)] = date.getDay();
   var yday = ydayFromDate(date) | 0;
-  HEAP32[(((tmPtr) + (28)) >>> 2) >>> 0] = yday;
-  HEAP32[((tmPtr) >>> 2) >>> 0] = date.getSeconds();
-  HEAP32[(((tmPtr) + (4)) >>> 2) >>> 0] = date.getMinutes();
-  HEAP32[(((tmPtr) + (8)) >>> 2) >>> 0] = date.getHours();
-  HEAP32[(((tmPtr) + (12)) >>> 2) >>> 0] = date.getDate();
-  HEAP32[(((tmPtr) + (16)) >>> 2) >>> 0] = date.getMonth();
-  HEAP32[(((tmPtr) + (20)) >>> 2) >>> 0] = date.getYear();
+  HEAP32[(((tmPtr) + (28)) / 4)] = yday;
+  HEAP32[((tmPtr) / 4)] = date.getSeconds();
+  HEAP32[(((tmPtr) + (4)) / 4)] = date.getMinutes();
+  HEAP32[(((tmPtr) + (8)) / 4)] = date.getHours();
+  HEAP32[(((tmPtr) + (12)) / 4)] = date.getDate();
+  HEAP32[(((tmPtr) + (16)) / 4)] = date.getMonth();
+  HEAP32[(((tmPtr) + (20)) / 4)] = date.getYear();
   var timeMs = date.getTime();
   if (isNaN(timeMs)) {
    return -1;
   }
   return timeMs / 1e3;
  })();
- return (setTempRet0((tempDouble = ret, (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0)), 
- ret >>> 0);
+ return BigInt(ret);
 };
 
-function __munmap_js(addr, len, prot, flags, fd, offset_low, offset_high) {
- addr >>>= 0;
- len >>>= 0;
- var offset = convertI32PairToI53Checked(offset_low, offset_high);
+function __munmap_js(addr, len, prot, flags, fd, offset) {
+ addr = bigintToI53Checked(addr);
+ len = bigintToI53Checked(len);
+ offset = bigintToI53Checked(offset);
  try {
   var stream = SYSCALLS.getStreamFromFD(fd);
   if (prot & 2) {
@@ -4104,18 +4018,18 @@ function __munmap_js(addr, len, prot, flags, fd, offset_low, offset_high) {
 }
 
 var __tzset_js = function(timezone, daylight, std_name, dst_name) {
- timezone >>>= 0;
- daylight >>>= 0;
- std_name >>>= 0;
- dst_name >>>= 0;
+ timezone = bigintToI53Checked(timezone);
+ daylight = bigintToI53Checked(daylight);
+ std_name = bigintToI53Checked(std_name);
+ dst_name = bigintToI53Checked(dst_name);
  var currentYear = (new Date).getFullYear();
  var winter = new Date(currentYear, 0, 1);
  var summer = new Date(currentYear, 6, 1);
  var winterOffset = winter.getTimezoneOffset();
  var summerOffset = summer.getTimezoneOffset();
  var stdTimezoneOffset = Math.max(winterOffset, summerOffset);
- HEAPU32[((timezone) >>> 2) >>> 0] = stdTimezoneOffset * 60;
- HEAP32[((daylight) >>> 2) >>> 0] = Number(winterOffset != summerOffset);
+ HEAPU64[((timezone) / 8)] = BigInt(stdTimezoneOffset * 60);
+ HEAP32[((daylight) / 4)] = Number(winterOffset != summerOffset);
  var extractZone = date => date.toLocaleTimeString(undefined, {
   hour12: false,
   timeZoneName: "short"
@@ -4135,52 +4049,16 @@ var __tzset_js = function(timezone, daylight, std_name, dst_name) {
  }
 };
 
-var readEmAsmArgsArray = [];
-
-var readEmAsmArgs = (sigPtr, buf) => {
- assert(Array.isArray(readEmAsmArgsArray));
- assert(buf % 16 == 0);
- readEmAsmArgsArray.length = 0;
- var ch;
- while (ch = HEAPU8[sigPtr++ >>> 0]) {
-  var chr = String.fromCharCode(ch);
-  var validChars = [ "d", "f", "i", "p" ];
-  assert(validChars.includes(chr), `Invalid character ${ch}("${chr}") in readEmAsmArgs! Use only [${validChars}], and do not specify "v" for void return argument.`);
-  var wide = (ch != 105);
-  wide &= (ch != 112);
-  buf += wide && (buf % 8) ? 4 : 0;
-  readEmAsmArgsArray.push(ch == 112 ? HEAPU32[((buf) >>> 2) >>> 0] : ch == 105 ? HEAP32[((buf) >>> 2) >>> 0] : HEAPF64[((buf) >>> 3) >>> 0]);
-  buf += wide ? 8 : 4;
- }
- return readEmAsmArgsArray;
-};
-
-var runEmAsmFunction = (code, sigPtr, argbuf) => {
- var args = readEmAsmArgs(sigPtr, argbuf);
- assert(ASM_CONSTS.hasOwnProperty(code), `No EM_ASM constant found at address ${code}.  The loaded WebAssembly file is likely out of sync with the generated JavaScript.`);
- return ASM_CONSTS[code](...args);
-};
-
-function _emscripten_asm_const_int(code, sigPtr, argbuf) {
- code >>>= 0;
- sigPtr >>>= 0;
- argbuf >>>= 0;
- return runEmAsmFunction(code, sigPtr, argbuf);
-}
-
 var _emscripten_date_now = () => Date.now();
 
-function _emscripten_errn(str, len) {
- str >>>= 0;
- len >>>= 0;
- return err(UTF8ToString(str, len));
+function _emscripten_err(str) {
+ str = bigintToI53Checked(str);
+ return err(UTF8ToString(str));
 }
 
-var getHeapMax = () => 4294901760;
+var getHeapMax = () => 17179869184;
 
-function _emscripten_get_heap_max() {
- return getHeapMax();
-}
+var _emscripten_get_heap_max = () => BigInt(getHeapMax());
 
 var _emscripten_get_now;
 
@@ -4199,7 +4077,7 @@ var growMemory = size => {
 };
 
 function _emscripten_resize_heap(requestedSize) {
- requestedSize >>>= 0;
+ requestedSize = bigintToI53Checked(requestedSize);
  var oldSize = HEAPU8.length;
  assert(requestedSize > oldSize);
  var maxHeapSize = getHeapMax();
@@ -4219,60 +4097,6 @@ function _emscripten_resize_heap(requestedSize) {
  }
  err(`Failed to grow the heap from ${oldSize} bytes to ${newSize} bytes, not enough memory!`);
  return false;
-}
-
-/** @returns {number} */ var convertFrameToPC = frame => {
- abort("Cannot use convertFrameToPC (needed by __builtin_return_address) without -sUSE_OFFSET_CONVERTER");
- return 0;
-};
-
-var UNWIND_CACHE = {};
-
-var saveInUnwindCache = callstack => {
- callstack.forEach(frame => {
-  var pc = convertFrameToPC(frame);
-  if (pc) {
-   UNWIND_CACHE[pc] = frame;
-  }
- });
-};
-
-function jsStackTrace() {
- return (new Error).stack.toString();
-}
-
-function _emscripten_stack_snapshot() {
- var callstack = jsStackTrace().split("\n");
- if (callstack[0] == "Error") {
-  callstack.shift();
- }
- saveInUnwindCache(callstack);
- UNWIND_CACHE.last_addr = convertFrameToPC(callstack[3]);
- UNWIND_CACHE.last_stack = callstack;
- return UNWIND_CACHE.last_addr;
-}
-
-function _emscripten_stack_unwind_buffer(addr, buffer, count) {
- addr >>>= 0;
- buffer >>>= 0;
- var stack;
- if (UNWIND_CACHE.last_addr == addr) {
-  stack = UNWIND_CACHE.last_stack;
- } else {
-  stack = jsStackTrace().split("\n");
-  if (stack[0] == "Error") {
-   stack.shift();
-  }
-  saveInUnwindCache(stack);
- }
- var offset = 3;
- while (stack[offset] && convertFrameToPC(stack[offset]) != addr) {
-  ++offset;
- }
- for (var i = 0; i < count && stack[i + offset]; ++i) {
-  HEAP32[(((buffer) + (i * 4)) >>> 2) >>> 0] = convertFrameToPC(stack[i + offset]);
- }
- return i;
 }
 
 var ENV = {};
@@ -4306,18 +4130,18 @@ var getEnvStrings = () => {
 var stringToAscii = (str, buffer) => {
  for (var i = 0; i < str.length; ++i) {
   assert(str.charCodeAt(i) === (str.charCodeAt(i) & 255));
-  HEAP8[buffer++ >>> 0] = str.charCodeAt(i);
+  HEAP8[buffer++] = str.charCodeAt(i);
  }
- HEAP8[buffer >>> 0] = 0;
+ HEAP8[buffer] = 0;
 };
 
 var _environ_get = function(__environ, environ_buf) {
- __environ >>>= 0;
- environ_buf >>>= 0;
+ __environ = bigintToI53Checked(__environ);
+ environ_buf = bigintToI53Checked(environ_buf);
  var bufSize = 0;
  getEnvStrings().forEach((string, i) => {
   var ptr = environ_buf + bufSize;
-  HEAPU32[(((__environ) + (i * 4)) >>> 2) >>> 0] = ptr;
+  HEAPU64[(((__environ) + (i * 8)) / 8)] = BigInt(ptr);
   stringToAscii(string, ptr);
   bufSize += string.length + 1;
  });
@@ -4325,13 +4149,13 @@ var _environ_get = function(__environ, environ_buf) {
 };
 
 var _environ_sizes_get = function(penviron_count, penviron_buf_size) {
- penviron_count >>>= 0;
- penviron_buf_size >>>= 0;
+ penviron_count = bigintToI53Checked(penviron_count);
+ penviron_buf_size = bigintToI53Checked(penviron_buf_size);
  var strings = getEnvStrings();
- HEAPU32[((penviron_count) >>> 2) >>> 0] = strings.length;
+ HEAPU64[((penviron_count) / 8)] = BigInt(strings.length);
  var bufSize = 0;
  strings.forEach(string => bufSize += string.length + 1);
- HEAPU32[((penviron_buf_size) >>> 2) >>> 0] = bufSize;
+ HEAPU64[((penviron_buf_size) / 8)] = BigInt(bufSize);
  return 0;
 };
 
@@ -4373,7 +4197,7 @@ function _fd_close(fd) {
 }
 
 function _fd_fdstat_get(fd, pbuf) {
- pbuf >>>= 0;
+ pbuf = bigintToI53Checked(pbuf);
  try {
   var rightsBase = 0;
   var rightsInheriting = 0;
@@ -4382,12 +4206,10 @@ function _fd_fdstat_get(fd, pbuf) {
    var stream = SYSCALLS.getStreamFromFD(fd);
    var type = stream.tty ? 2 : FS.isDir(stream.mode) ? 3 : FS.isLink(stream.mode) ? 7 : 4;
   }
-  HEAP8[pbuf >>> 0] = type;
-  HEAP16[(((pbuf) + (2)) >>> 1) >>> 0] = flags;
-  (tempI64 = [ rightsBase >>> 0, (tempDouble = rightsBase, (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0) ], 
-  HEAP32[(((pbuf) + (8)) >>> 2) >>> 0] = tempI64[0], HEAP32[(((pbuf) + (12)) >>> 2) >>> 0] = tempI64[1]);
-  (tempI64 = [ rightsInheriting >>> 0, (tempDouble = rightsInheriting, (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0) ], 
-  HEAP32[(((pbuf) + (16)) >>> 2) >>> 0] = tempI64[0], HEAP32[(((pbuf) + (20)) >>> 2) >>> 0] = tempI64[1]);
+  HEAP8[pbuf] = type;
+  HEAP16[(((pbuf) + (2)) / 2)] = flags;
+  HEAP64[(((pbuf) + (8)) / 8)] = BigInt(rightsBase);
+  HEAP64[(((pbuf) + (16)) / 8)] = BigInt(rightsInheriting);
   return 0;
  } catch (e) {
   if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
@@ -4398,9 +4220,9 @@ function _fd_fdstat_get(fd, pbuf) {
 /** @param {number=} offset */ var doReadv = (stream, iov, iovcnt, offset) => {
  var ret = 0;
  for (var i = 0; i < iovcnt; i++) {
-  var ptr = HEAPU32[((iov) >>> 2) >>> 0];
-  var len = HEAPU32[(((iov) + (4)) >>> 2) >>> 0];
-  iov += 8;
+  var ptr = Number(HEAPU64[((iov) / 8)]);
+  var len = Number(HEAPU64[(((iov) + (8)) / 8)]);
+  iov += 16;
   var curr = FS.read(stream, HEAP8, ptr, len, offset);
   if (curr < 0) return -1;
   ret += curr;
@@ -4413,13 +4235,13 @@ function _fd_fdstat_get(fd, pbuf) {
 };
 
 function _fd_read(fd, iov, iovcnt, pnum) {
- iov >>>= 0;
- iovcnt >>>= 0;
- pnum >>>= 0;
+ iov = bigintToI53Checked(iov);
+ iovcnt = bigintToI53Checked(iovcnt);
+ pnum = bigintToI53Checked(pnum);
  try {
   var stream = SYSCALLS.getStreamFromFD(fd);
   var num = doReadv(stream, iov, iovcnt);
-  HEAPU32[((pnum) >>> 2) >>> 0] = num;
+  HEAPU64[((pnum) / 8)] = BigInt(num);
   return 0;
  } catch (e) {
   if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
@@ -4427,15 +4249,14 @@ function _fd_read(fd, iov, iovcnt, pnum) {
  }
 }
 
-function _fd_seek(fd, offset_low, offset_high, whence, newOffset) {
- var offset = convertI32PairToI53Checked(offset_low, offset_high);
- newOffset >>>= 0;
+function _fd_seek(fd, offset, whence, newOffset) {
+ offset = bigintToI53Checked(offset);
+ newOffset = bigintToI53Checked(newOffset);
  try {
   if (isNaN(offset)) return 61;
   var stream = SYSCALLS.getStreamFromFD(fd);
   FS.llseek(stream, offset, whence);
-  (tempI64 = [ stream.position >>> 0, (tempDouble = stream.position, (+(Math.abs(tempDouble))) >= 1 ? (tempDouble > 0 ? (+(Math.floor((tempDouble) / 4294967296))) >>> 0 : (~~((+(Math.ceil((tempDouble - +(((~~(tempDouble))) >>> 0)) / 4294967296))))) >>> 0) : 0) ], 
-  HEAP32[((newOffset) >>> 2) >>> 0] = tempI64[0], HEAP32[(((newOffset) + (4)) >>> 2) >>> 0] = tempI64[1]);
+  HEAP64[((newOffset) / 8)] = BigInt(stream.position);
   if (stream.getdents && offset === 0 && whence === 0) stream.getdents = null;
   return 0;
  } catch (e) {
@@ -4472,9 +4293,9 @@ _fd_sync.isAsync = true;
 /** @param {number=} offset */ var doWritev = (stream, iov, iovcnt, offset) => {
  var ret = 0;
  for (var i = 0; i < iovcnt; i++) {
-  var ptr = HEAPU32[((iov) >>> 2) >>> 0];
-  var len = HEAPU32[(((iov) + (4)) >>> 2) >>> 0];
-  iov += 8;
+  var ptr = Number(HEAPU64[((iov) / 8)]);
+  var len = Number(HEAPU64[(((iov) + (8)) / 8)]);
+  iov += 16;
   var curr = FS.write(stream, HEAP8, ptr, len, offset);
   if (curr < 0) return -1;
   ret += curr;
@@ -4486,13 +4307,13 @@ _fd_sync.isAsync = true;
 };
 
 function _fd_write(fd, iov, iovcnt, pnum) {
- iov >>>= 0;
- iovcnt >>>= 0;
- pnum >>>= 0;
+ iov = bigintToI53Checked(iov);
+ iovcnt = bigintToI53Checked(iovcnt);
+ pnum = bigintToI53Checked(pnum);
  try {
   var stream = SYSCALLS.getStreamFromFD(fd);
   var num = doWritev(stream, iov, iovcnt);
-  HEAPU32[((pnum) >>> 2) >>> 0] = num;
+  HEAPU64[((pnum) / 8)] = BigInt(num);
   return 0;
  } catch (e) {
   if (typeof FS == "undefined" || !(e.name === "ErrnoError")) throw e;
@@ -4535,217 +4356,222 @@ var addDays = (date, days) => {
 
 var writeArrayToMemory = (array, buffer) => {
  assert(array.length >= 0, "writeArrayToMemory array must have a length (should be an array or typed array)");
- HEAP8.set(array, buffer >>> 0);
+ HEAP8.set(array, buffer);
 };
 
-function _strftime(s, maxsize, format, tm) {
- s >>>= 0;
- maxsize >>>= 0;
- format >>>= 0;
- tm >>>= 0;
- var tm_zone = HEAPU32[(((tm) + (40)) >>> 2) >>> 0];
- var date = {
-  tm_sec: HEAP32[((tm) >>> 2) >>> 0],
-  tm_min: HEAP32[(((tm) + (4)) >>> 2) >>> 0],
-  tm_hour: HEAP32[(((tm) + (8)) >>> 2) >>> 0],
-  tm_mday: HEAP32[(((tm) + (12)) >>> 2) >>> 0],
-  tm_mon: HEAP32[(((tm) + (16)) >>> 2) >>> 0],
-  tm_year: HEAP32[(((tm) + (20)) >>> 2) >>> 0],
-  tm_wday: HEAP32[(((tm) + (24)) >>> 2) >>> 0],
-  tm_yday: HEAP32[(((tm) + (28)) >>> 2) >>> 0],
-  tm_isdst: HEAP32[(((tm) + (32)) >>> 2) >>> 0],
-  tm_gmtoff: HEAP32[(((tm) + (36)) >>> 2) >>> 0],
-  tm_zone: tm_zone ? UTF8ToString(tm_zone) : ""
- };
- var pattern = UTF8ToString(format);
- var EXPANSION_RULES_1 = {
-  "%c": "%a %b %d %H:%M:%S %Y",
-  "%D": "%m/%d/%y",
-  "%F": "%Y-%m-%d",
-  "%h": "%b",
-  "%r": "%I:%M:%S %p",
-  "%R": "%H:%M",
-  "%T": "%H:%M:%S",
-  "%x": "%m/%d/%y",
-  "%X": "%H:%M:%S",
-  "%Ec": "%c",
-  "%EC": "%C",
-  "%Ex": "%m/%d/%y",
-  "%EX": "%H:%M:%S",
-  "%Ey": "%y",
-  "%EY": "%Y",
-  "%Od": "%d",
-  "%Oe": "%e",
-  "%OH": "%H",
-  "%OI": "%I",
-  "%Om": "%m",
-  "%OM": "%M",
-  "%OS": "%S",
-  "%Ou": "%u",
-  "%OU": "%U",
-  "%OV": "%V",
-  "%Ow": "%w",
-  "%OW": "%W",
-  "%Oy": "%y"
- };
- for (var rule in EXPANSION_RULES_1) {
-  pattern = pattern.replace(new RegExp(rule, "g"), EXPANSION_RULES_1[rule]);
- }
- var WEEKDAYS = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ];
- var MONTHS = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
- function leadingSomething(value, digits, character) {
-  var str = typeof value == "number" ? value.toString() : (value || "");
-  while (str.length < digits) {
-   str = character[0] + str;
+var _strftime = function(s, maxsize, format, tm) {
+ s = bigintToI53Checked(s);
+ maxsize = bigintToI53Checked(maxsize);
+ format = bigintToI53Checked(format);
+ tm = bigintToI53Checked(tm);
+ var ret = (() => {
+  var tm_zone = Number(HEAPU64[(((tm) + (48)) / 8)]);
+  var date = {
+   tm_sec: HEAP32[((tm) / 4)],
+   tm_min: HEAP32[(((tm) + (4)) / 4)],
+   tm_hour: HEAP32[(((tm) + (8)) / 4)],
+   tm_mday: HEAP32[(((tm) + (12)) / 4)],
+   tm_mon: HEAP32[(((tm) + (16)) / 4)],
+   tm_year: HEAP32[(((tm) + (20)) / 4)],
+   tm_wday: HEAP32[(((tm) + (24)) / 4)],
+   tm_yday: HEAP32[(((tm) + (28)) / 4)],
+   tm_isdst: HEAP32[(((tm) + (32)) / 4)],
+   tm_gmtoff: HEAP64[(((tm) + (40)) / 8)],
+   tm_zone: tm_zone ? UTF8ToString(tm_zone) : ""
+  };
+  date.tm_gmtoff = Number(date.tm_gmtoff);
+  var pattern = UTF8ToString(format);
+  var EXPANSION_RULES_1 = {
+   "%c": "%a %b %d %H:%M:%S %Y",
+   "%D": "%m/%d/%y",
+   "%F": "%Y-%m-%d",
+   "%h": "%b",
+   "%r": "%I:%M:%S %p",
+   "%R": "%H:%M",
+   "%T": "%H:%M:%S",
+   "%x": "%m/%d/%y",
+   "%X": "%H:%M:%S",
+   "%Ec": "%c",
+   "%EC": "%C",
+   "%Ex": "%m/%d/%y",
+   "%EX": "%H:%M:%S",
+   "%Ey": "%y",
+   "%EY": "%Y",
+   "%Od": "%d",
+   "%Oe": "%e",
+   "%OH": "%H",
+   "%OI": "%I",
+   "%Om": "%m",
+   "%OM": "%M",
+   "%OS": "%S",
+   "%Ou": "%u",
+   "%OU": "%U",
+   "%OV": "%V",
+   "%Ow": "%w",
+   "%OW": "%W",
+   "%Oy": "%y"
+  };
+  for (var rule in EXPANSION_RULES_1) {
+   pattern = pattern.replace(new RegExp(rule, "g"), EXPANSION_RULES_1[rule]);
   }
-  return str;
- }
- function leadingNulls(value, digits) {
-  return leadingSomething(value, digits, "0");
- }
- function compareByDay(date1, date2) {
-  function sgn(value) {
-   return value < 0 ? -1 : (value > 0 ? 1 : 0);
+  var WEEKDAYS = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ];
+  var MONTHS = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
+  function leadingSomething(value, digits, character) {
+   var str = typeof value == "number" ? value.toString() : (value || "");
+   while (str.length < digits) {
+    str = character[0] + str;
+   }
+   return str;
   }
-  var compare;
-  if ((compare = sgn(date1.getFullYear() - date2.getFullYear())) === 0) {
-   if ((compare = sgn(date1.getMonth() - date2.getMonth())) === 0) {
-    compare = sgn(date1.getDate() - date2.getDate());
+  function leadingNulls(value, digits) {
+   return leadingSomething(value, digits, "0");
+  }
+  function compareByDay(date1, date2) {
+   function sgn(value) {
+    return value < 0 ? -1 : (value > 0 ? 1 : 0);
+   }
+   var compare;
+   if ((compare = sgn(date1.getFullYear() - date2.getFullYear())) === 0) {
+    if ((compare = sgn(date1.getMonth() - date2.getMonth())) === 0) {
+     compare = sgn(date1.getDate() - date2.getDate());
+    }
+   }
+   return compare;
+  }
+  function getFirstWeekStartDate(janFourth) {
+   switch (janFourth.getDay()) {
+   case 0:
+    return new Date(janFourth.getFullYear() - 1, 11, 29);
+
+   case 1:
+    return janFourth;
+
+   case 2:
+    return new Date(janFourth.getFullYear(), 0, 3);
+
+   case 3:
+    return new Date(janFourth.getFullYear(), 0, 2);
+
+   case 4:
+    return new Date(janFourth.getFullYear(), 0, 1);
+
+   case 5:
+    return new Date(janFourth.getFullYear() - 1, 11, 31);
+
+   case 6:
+    return new Date(janFourth.getFullYear() - 1, 11, 30);
    }
   }
-  return compare;
- }
- function getFirstWeekStartDate(janFourth) {
-  switch (janFourth.getDay()) {
-  case 0:
-   return new Date(janFourth.getFullYear() - 1, 11, 29);
-
-  case 1:
-   return janFourth;
-
-  case 2:
-   return new Date(janFourth.getFullYear(), 0, 3);
-
-  case 3:
-   return new Date(janFourth.getFullYear(), 0, 2);
-
-  case 4:
-   return new Date(janFourth.getFullYear(), 0, 1);
-
-  case 5:
-   return new Date(janFourth.getFullYear() - 1, 11, 31);
-
-  case 6:
-   return new Date(janFourth.getFullYear() - 1, 11, 30);
+  function getWeekBasedYear(date) {
+   var thisDate = addDays(new Date(date.tm_year + 1900, 0, 1), date.tm_yday);
+   var janFourthThisYear = new Date(thisDate.getFullYear(), 0, 4);
+   var janFourthNextYear = new Date(thisDate.getFullYear() + 1, 0, 4);
+   var firstWeekStartThisYear = getFirstWeekStartDate(janFourthThisYear);
+   var firstWeekStartNextYear = getFirstWeekStartDate(janFourthNextYear);
+   if (compareByDay(firstWeekStartThisYear, thisDate) <= 0) {
+    if (compareByDay(firstWeekStartNextYear, thisDate) <= 0) {
+     return thisDate.getFullYear() + 1;
+    }
+    return thisDate.getFullYear();
+   }
+   return thisDate.getFullYear() - 1;
   }
- }
- function getWeekBasedYear(date) {
-  var thisDate = addDays(new Date(date.tm_year + 1900, 0, 1), date.tm_yday);
-  var janFourthThisYear = new Date(thisDate.getFullYear(), 0, 4);
-  var janFourthNextYear = new Date(thisDate.getFullYear() + 1, 0, 4);
-  var firstWeekStartThisYear = getFirstWeekStartDate(janFourthThisYear);
-  var firstWeekStartNextYear = getFirstWeekStartDate(janFourthNextYear);
-  if (compareByDay(firstWeekStartThisYear, thisDate) <= 0) {
-   if (compareByDay(firstWeekStartNextYear, thisDate) <= 0) {
-    return thisDate.getFullYear() + 1;
-   }
-   return thisDate.getFullYear();
-  }
-  return thisDate.getFullYear() - 1;
- }
- var EXPANSION_RULES_2 = {
-  "%a": date => WEEKDAYS[date.tm_wday].substring(0, 3),
-  "%A": date => WEEKDAYS[date.tm_wday],
-  "%b": date => MONTHS[date.tm_mon].substring(0, 3),
-  "%B": date => MONTHS[date.tm_mon],
-  "%C": date => {
-   var year = date.tm_year + 1900;
-   return leadingNulls((year / 100) | 0, 2);
-  },
-  "%d": date => leadingNulls(date.tm_mday, 2),
-  "%e": date => leadingSomething(date.tm_mday, 2, " "),
-  "%g": date => getWeekBasedYear(date).toString().substring(2),
-  "%G": getWeekBasedYear,
-  "%H": date => leadingNulls(date.tm_hour, 2),
-  "%I": date => {
-   var twelveHour = date.tm_hour;
-   if (twelveHour == 0) twelveHour = 12; else if (twelveHour > 12) twelveHour -= 12;
-   return leadingNulls(twelveHour, 2);
-  },
-  "%j": date => leadingNulls(date.tm_mday + arraySum(isLeapYear(date.tm_year + 1900) ? MONTH_DAYS_LEAP : MONTH_DAYS_REGULAR, date.tm_mon - 1), 3),
-  "%m": date => leadingNulls(date.tm_mon + 1, 2),
-  "%M": date => leadingNulls(date.tm_min, 2),
-  "%n": () => "\n",
-  "%p": date => {
-   if (date.tm_hour >= 0 && date.tm_hour < 12) {
-    return "AM";
-   }
-   return "PM";
-  },
-  "%S": date => leadingNulls(date.tm_sec, 2),
-  "%t": () => "\t",
-  "%u": date => date.tm_wday || 7,
-  "%U": date => {
-   var days = date.tm_yday + 7 - date.tm_wday;
-   return leadingNulls(Math.floor(days / 7), 2);
-  },
-  "%V": date => {
-   var val = Math.floor((date.tm_yday + 7 - (date.tm_wday + 6) % 7) / 7);
-   if ((date.tm_wday + 371 - date.tm_yday - 2) % 7 <= 2) {
-    val++;
-   }
-   if (!val) {
-    val = 52;
-    var dec31 = (date.tm_wday + 7 - date.tm_yday - 1) % 7;
-    if (dec31 == 4 || (dec31 == 5 && isLeapYear(date.tm_year % 400 - 1))) {
+  var EXPANSION_RULES_2 = {
+   "%a": date => WEEKDAYS[date.tm_wday].substring(0, 3),
+   "%A": date => WEEKDAYS[date.tm_wday],
+   "%b": date => MONTHS[date.tm_mon].substring(0, 3),
+   "%B": date => MONTHS[date.tm_mon],
+   "%C": date => {
+    var year = date.tm_year + 1900;
+    return leadingNulls((year / 100) | 0, 2);
+   },
+   "%d": date => leadingNulls(date.tm_mday, 2),
+   "%e": date => leadingSomething(date.tm_mday, 2, " "),
+   "%g": date => getWeekBasedYear(date).toString().substring(2),
+   "%G": getWeekBasedYear,
+   "%H": date => leadingNulls(date.tm_hour, 2),
+   "%I": date => {
+    var twelveHour = date.tm_hour;
+    if (twelveHour == 0) twelveHour = 12; else if (twelveHour > 12) twelveHour -= 12;
+    return leadingNulls(twelveHour, 2);
+   },
+   "%j": date => leadingNulls(date.tm_mday + arraySum(isLeapYear(date.tm_year + 1900) ? MONTH_DAYS_LEAP : MONTH_DAYS_REGULAR, date.tm_mon - 1), 3),
+   "%m": date => leadingNulls(date.tm_mon + 1, 2),
+   "%M": date => leadingNulls(date.tm_min, 2),
+   "%n": () => "\n",
+   "%p": date => {
+    if (date.tm_hour >= 0 && date.tm_hour < 12) {
+     return "AM";
+    }
+    return "PM";
+   },
+   "%S": date => leadingNulls(date.tm_sec, 2),
+   "%t": () => "\t",
+   "%u": date => date.tm_wday || 7,
+   "%U": date => {
+    var days = date.tm_yday + 7 - date.tm_wday;
+    return leadingNulls(Math.floor(days / 7), 2);
+   },
+   "%V": date => {
+    var val = Math.floor((date.tm_yday + 7 - (date.tm_wday + 6) % 7) / 7);
+    if ((date.tm_wday + 371 - date.tm_yday - 2) % 7 <= 2) {
      val++;
     }
-   } else if (val == 53) {
-    var jan1 = (date.tm_wday + 371 - date.tm_yday) % 7;
-    if (jan1 != 4 && (jan1 != 3 || !isLeapYear(date.tm_year))) val = 1;
+    if (!val) {
+     val = 52;
+     var dec31 = (date.tm_wday + 7 - date.tm_yday - 1) % 7;
+     if (dec31 == 4 || (dec31 == 5 && isLeapYear(date.tm_year % 400 - 1))) {
+      val++;
+     }
+    } else if (val == 53) {
+     var jan1 = (date.tm_wday + 371 - date.tm_yday) % 7;
+     if (jan1 != 4 && (jan1 != 3 || !isLeapYear(date.tm_year))) val = 1;
+    }
+    return leadingNulls(val, 2);
+   },
+   "%w": date => date.tm_wday,
+   "%W": date => {
+    var days = date.tm_yday + 7 - ((date.tm_wday + 6) % 7);
+    return leadingNulls(Math.floor(days / 7), 2);
+   },
+   "%y": date => (date.tm_year + 1900).toString().substring(2),
+   "%Y": date => date.tm_year + 1900,
+   "%z": date => {
+    var off = date.tm_gmtoff;
+    var ahead = off >= 0;
+    off = Math.abs(off) / 60;
+    off = (off / 60) * 100 + (off % 60);
+    return (ahead ? "+" : "-") + String("0000" + off).slice(-4);
+   },
+   "%Z": date => date.tm_zone,
+   "%%": () => "%"
+  };
+  pattern = pattern.replace(/%%/g, "\0\0");
+  for (var rule in EXPANSION_RULES_2) {
+   if (pattern.includes(rule)) {
+    pattern = pattern.replace(new RegExp(rule, "g"), EXPANSION_RULES_2[rule](date));
    }
-   return leadingNulls(val, 2);
-  },
-  "%w": date => date.tm_wday,
-  "%W": date => {
-   var days = date.tm_yday + 7 - ((date.tm_wday + 6) % 7);
-   return leadingNulls(Math.floor(days / 7), 2);
-  },
-  "%y": date => (date.tm_year + 1900).toString().substring(2),
-  "%Y": date => date.tm_year + 1900,
-  "%z": date => {
-   var off = date.tm_gmtoff;
-   var ahead = off >= 0;
-   off = Math.abs(off) / 60;
-   off = (off / 60) * 100 + (off % 60);
-   return (ahead ? "+" : "-") + String("0000" + off).slice(-4);
-  },
-  "%Z": date => date.tm_zone,
-  "%%": () => "%"
- };
- pattern = pattern.replace(/%%/g, "\0\0");
- for (var rule in EXPANSION_RULES_2) {
-  if (pattern.includes(rule)) {
-   pattern = pattern.replace(new RegExp(rule, "g"), EXPANSION_RULES_2[rule](date));
   }
- }
- pattern = pattern.replace(/\0\0/g, "%");
- var bytes = intArrayFromString(pattern, false);
- if (bytes.length > maxsize) {
-  return 0;
- }
- writeArrayToMemory(bytes, s);
- return bytes.length - 1;
-}
+  pattern = pattern.replace(/\0\0/g, "%");
+  var bytes = intArrayFromString(pattern, false);
+  if (bytes.length > maxsize) {
+   return 0;
+  }
+  writeArrayToMemory(bytes, s);
+  return bytes.length - 1;
+ })();
+ return BigInt(ret);
+};
 
-function _strftime_l(s, maxsize, format, tm, loc) {
- s >>>= 0;
- maxsize >>>= 0;
- format >>>= 0;
- tm >>>= 0;
- loc >>>= 0;
- return _strftime(s, maxsize, format, tm);
-}
+var _strftime_l = function(s, maxsize, format, tm, loc) {
+ s = bigintToI53Checked(s);
+ maxsize = bigintToI53Checked(maxsize);
+ format = bigintToI53Checked(format);
+ tm = bigintToI53Checked(tm);
+ loc = bigintToI53Checked(loc);
+ var ret = (() => _strftime(s, maxsize, format, tm))();
+ return BigInt(ret);
+};
 
 var wasmTableMirror = [];
 
@@ -4766,7 +4592,7 @@ var handleException = e => {
  checkStackCookie();
  if (e instanceof WebAssembly.RuntimeError) {
   if (_emscripten_stack_get_current() <= 0) {
-   err("Stack overflow detected.  You can try increasing -sSTACK_SIZE (currently set to 20971520)");
+   err("Stack overflow detected.  You can try increasing -sSTACK_SIZE (currently set to 41943040)");
   }
  }
  quit_(1, e);
@@ -4805,6 +4631,7 @@ var runtimeKeepalivePop = () => {
 };
 
 var Asyncify = {
+ rewindArguments: {},
  instrumentWasmImports(imports) {
   var importPattern = /^(invoke_.*|__asyncjs__.*)$/;
   for (let [x, original] of Object.entries(imports)) {
@@ -4825,6 +4652,12 @@ var Asyncify = {
    }
   }
  },
+ saveOrRestoreRewindArguments(funcName, passedArguments) {
+  if (passedArguments.length === 0) {
+   return Asyncify.rewindArguments[funcName] || [];
+  }
+  return Asyncify.rewindArguments[funcName] = Array.from(passedArguments);
+ },
  instrumentWasmExports(exports) {
   var ret = {};
   for (let [x, original] of Object.entries(exports)) {
@@ -4832,7 +4665,7 @@ var Asyncify = {
     ret[x] = (...args) => {
      Asyncify.exportCallStack.push(x);
      try {
-      return original(...args);
+      return original(...Asyncify.saveOrRestoreRewindArguments(x, args));
      } finally {
       if (!ABORT) {
        var y = Asyncify.exportCallStack.pop();
@@ -4892,22 +4725,22 @@ var Asyncify = {
   });
  },
  allocateData() {
-  var ptr = _malloc(12 + Asyncify.StackSize);
-  Asyncify.setDataHeader(ptr, ptr + 12, Asyncify.StackSize);
+  var ptr = _malloc(24 + Asyncify.StackSize);
+  Asyncify.setDataHeader(ptr, ptr + 24, Asyncify.StackSize);
   Asyncify.setDataRewindFunc(ptr);
   return ptr;
  },
  setDataHeader(ptr, stack, stackSize) {
-  HEAPU32[((ptr) >>> 2) >>> 0] = stack;
-  HEAPU32[(((ptr) + (4)) >>> 2) >>> 0] = stack + stackSize;
+  HEAPU64[((ptr) / 8)] = BigInt(stack);
+  HEAPU64[(((ptr) + (8)) / 8)] = BigInt(stack + stackSize);
  },
  setDataRewindFunc(ptr) {
   var bottomOfCallStack = Asyncify.exportCallStack[0];
   var rewindId = Asyncify.getCallStackId(bottomOfCallStack);
-  HEAP32[(((ptr) + (8)) >>> 2) >>> 0] = rewindId;
+  HEAP32[(((ptr) + (16)) / 4)] = rewindId;
  },
  getDataRewindFunc(ptr) {
-  var id = HEAP32[(((ptr) + (8)) >>> 2) >>> 0];
+  var id = HEAP32[(((ptr) + (16)) / 4)];
   var name = Asyncify.callStackIdToName[id];
   var func = wasmExports[name];
   return func;
@@ -5005,23 +4838,26 @@ var stringToUTF8OnStack = str => {
      * @param {Object=} opts
      */ var ccall = (ident, returnType, argTypes, args, opts) => {
  var toC = {
+  "pointer": p => BigInt(p),
   "string": str => {
    var ret = 0;
    if (str !== null && str !== undefined && str !== 0) {
     ret = stringToUTF8OnStack(str);
    }
-   return ret;
+   return BigInt(ret);
   },
   "array": arr => {
    var ret = stackAlloc(arr.length);
    writeArrayToMemory(arr, ret);
-   return ret;
+   return BigInt(ret);
   }
  };
  function convertReturnValue(ret) {
   if (returnType === "string") {
+   ret = Number(ret);
    return UTF8ToString(ret);
   }
+  if (returnType === "pointer") return Number(ret);
   if (returnType === "boolean") return Boolean(ret);
   return ret;
  }
@@ -5100,7 +4936,6 @@ var wasmImports = {
  /** @export */ __syscall_fstat64: ___syscall_fstat64,
  /** @export */ __syscall_ftruncate64: ___syscall_ftruncate64,
  /** @export */ __syscall_getcwd: ___syscall_getcwd,
- /** @export */ __syscall_getdents64: ___syscall_getdents64,
  /** @export */ __syscall_ioctl: ___syscall_ioctl,
  /** @export */ __syscall_lstat64: ___syscall_lstat64,
  /** @export */ __syscall_mkdirat: ___syscall_mkdirat,
@@ -5122,14 +4957,11 @@ var wasmImports = {
  /** @export */ _mktime_js: __mktime_js,
  /** @export */ _munmap_js: __munmap_js,
  /** @export */ _tzset_js: __tzset_js,
- /** @export */ emscripten_asm_const_int: _emscripten_asm_const_int,
  /** @export */ emscripten_date_now: _emscripten_date_now,
- /** @export */ emscripten_errn: _emscripten_errn,
+ /** @export */ emscripten_err: _emscripten_err,
  /** @export */ emscripten_get_heap_max: _emscripten_get_heap_max,
  /** @export */ emscripten_get_now: _emscripten_get_now,
  /** @export */ emscripten_resize_heap: _emscripten_resize_heap,
- /** @export */ emscripten_stack_snapshot: _emscripten_stack_snapshot,
- /** @export */ emscripten_stack_unwind_buffer: _emscripten_stack_unwind_buffer,
  /** @export */ environ_get: _environ_get,
  /** @export */ environ_sizes_get: _environ_sizes_get,
  /** @export */ exit: _exit,
@@ -5139,7 +4971,7 @@ var wasmImports = {
  /** @export */ fd_seek: _fd_seek,
  /** @export */ fd_sync: _fd_sync,
  /** @export */ fd_write: _fd_write,
- /** @export */ invoke_vii: invoke_vii,
+ /** @export */ invoke_vjj: invoke_vjj,
  /** @export */ strftime: _strftime,
  /** @export */ strftime_l: _strftime_l
 };
@@ -5164,8 +4996,6 @@ var _sbrk = createExportWrapper("sbrk", 1);
 
 var _setThrew = createExportWrapper("setThrew", 2);
 
-var __emscripten_tempret_set = createExportWrapper("_emscripten_tempret_set", 1);
-
 var _emscripten_stack_init = () => (_emscripten_stack_init = wasmExports["emscripten_stack_init"])();
 
 var _emscripten_stack_get_free = () => (_emscripten_stack_get_free = wasmExports["emscripten_stack_get_free"])();
@@ -5182,183 +5012,207 @@ var _emscripten_stack_get_current = () => (_emscripten_stack_get_current = wasmE
 
 var ___cxa_is_pointer_type = createExportWrapper("__cxa_is_pointer_type", 1);
 
-var dynCall_ii = Module["dynCall_ii"] = createExportWrapper("dynCall_ii", 2);
+var dynCall_ij = Module["dynCall_ij"] = createExportWrapper("dynCall_ij", 2);
 
 var dynCall_vi = Module["dynCall_vi"] = createExportWrapper("dynCall_vi", 2);
 
-var dynCall_vii = Module["dynCall_vii"] = createExportWrapper("dynCall_vii", 3);
+var dynCall_vjj = Module["dynCall_vjj"] = createExportWrapper("dynCall_vjj", 3);
+
+var dynCall_jjj = Module["dynCall_jjj"] = createExportWrapper("dynCall_jjj", 3);
+
+var dynCall_jjjj = Module["dynCall_jjjj"] = createExportWrapper("dynCall_jjjj", 4);
+
+var dynCall_jjjjj = Module["dynCall_jjjjj"] = createExportWrapper("dynCall_jjjjj", 5);
+
+var dynCall_ijij = Module["dynCall_ijij"] = createExportWrapper("dynCall_ijij", 4);
+
+var dynCall_ijjjj = Module["dynCall_ijjjj"] = createExportWrapper("dynCall_ijjjj", 5);
+
+var dynCall_vjij = Module["dynCall_vjij"] = createExportWrapper("dynCall_vjij", 4);
+
+var dynCall_vj = Module["dynCall_vj"] = createExportWrapper("dynCall_vj", 2);
+
+var dynCall_ijijij = Module["dynCall_ijijij"] = createExportWrapper("dynCall_ijijij", 6);
+
+var dynCall_iji = Module["dynCall_iji"] = createExportWrapper("dynCall_iji", 3);
+
+var dynCall_vjijjj = Module["dynCall_vjijjj"] = createExportWrapper("dynCall_vjijjj", 6);
+
+var dynCall_ijijj = Module["dynCall_ijijj"] = createExportWrapper("dynCall_ijijj", 5);
+
+var dynCall_i = Module["dynCall_i"] = createExportWrapper("dynCall_i", 1);
+
+var dynCall_ji = Module["dynCall_ji"] = createExportWrapper("dynCall_ji", 2);
+
+var dynCall_ijjjiji = Module["dynCall_ijjjiji"] = createExportWrapper("dynCall_ijjjiji", 7);
+
+var dynCall_vjjj = Module["dynCall_vjjj"] = createExportWrapper("dynCall_vjjj", 4);
+
+var dynCall_ijj = Module["dynCall_ijj"] = createExportWrapper("dynCall_ijj", 3);
+
+var dynCall_ijiji = Module["dynCall_ijiji"] = createExportWrapper("dynCall_ijiji", 5);
+
+var dynCall_ijiij = Module["dynCall_ijiij"] = createExportWrapper("dynCall_ijiij", 5);
+
+var dynCall_ijjji = Module["dynCall_ijjji"] = createExportWrapper("dynCall_ijjji", 5);
+
+var dynCall_ijjjjj = Module["dynCall_ijjjjj"] = createExportWrapper("dynCall_ijjjjj", 6);
+
+var dynCall_vjjjij = Module["dynCall_vjjjij"] = createExportWrapper("dynCall_vjjjij", 6);
+
+var dynCall_iijj = Module["dynCall_iijj"] = createExportWrapper("dynCall_iijj", 4);
+
+var dynCall_jj = Module["dynCall_jj"] = createExportWrapper("dynCall_jj", 2);
+
+var dynCall_vjjii = Module["dynCall_vjjii"] = createExportWrapper("dynCall_vjjii", 5);
+
+var dynCall_ijijiii = Module["dynCall_ijijiii"] = createExportWrapper("dynCall_ijijiii", 7);
+
+var dynCall_ijjj = Module["dynCall_ijjj"] = createExportWrapper("dynCall_ijjj", 4);
+
+var dynCall_ijjij = Module["dynCall_ijjij"] = createExportWrapper("dynCall_ijjij", 5);
+
+var dynCall_vjjji = Module["dynCall_vjjji"] = createExportWrapper("dynCall_vjjji", 5);
+
+var dynCall_vjjjj = Module["dynCall_vjjjj"] = createExportWrapper("dynCall_vjjjj", 5);
+
+var dynCall_vjjij = Module["dynCall_vjjij"] = createExportWrapper("dynCall_vjjij", 5);
+
+var dynCall_ijjjij = Module["dynCall_ijjjij"] = createExportWrapper("dynCall_ijjjij", 6);
+
+var dynCall_ijji = Module["dynCall_ijji"] = createExportWrapper("dynCall_ijji", 4);
+
+var dynCall_ijiiij = Module["dynCall_ijiiij"] = createExportWrapper("dynCall_ijiiij", 6);
+
+var dynCall_ijiii = Module["dynCall_ijiii"] = createExportWrapper("dynCall_ijiii", 5);
+
+var dynCall_ijii = Module["dynCall_ijii"] = createExportWrapper("dynCall_ijii", 4);
+
+var dynCall_ii = Module["dynCall_ii"] = createExportWrapper("dynCall_ii", 2);
+
+var dynCall_iij = Module["dynCall_iij"] = createExportWrapper("dynCall_iij", 3);
+
+var dynCall_iiij = Module["dynCall_iiij"] = createExportWrapper("dynCall_iiij", 4);
+
+var dynCall_jijj = Module["dynCall_jijj"] = createExportWrapper("dynCall_jijj", 4);
 
 var dynCall_iii = Module["dynCall_iii"] = createExportWrapper("dynCall_iii", 3);
 
 var dynCall_iiii = Module["dynCall_iiii"] = createExportWrapper("dynCall_iiii", 4);
 
-var dynCall_iiiii = Module["dynCall_iiiii"] = createExportWrapper("dynCall_iiiii", 5);
+var dynCall_jjjiiij = Module["dynCall_jjjiiij"] = createExportWrapper("dynCall_jjjiiij", 7);
 
-var dynCall_viii = Module["dynCall_viii"] = createExportWrapper("dynCall_viii", 4);
+var dynCall_ijjijjj = Module["dynCall_ijjijjj"] = createExportWrapper("dynCall_ijjijjj", 7);
 
-var dynCall_iiiiii = Module["dynCall_iiiiii"] = createExportWrapper("dynCall_iiiiii", 6);
+var dynCall_jji = Module["dynCall_jji"] = createExportWrapper("dynCall_jji", 3);
 
-var dynCall_viiiij = Module["dynCall_viiiij"] = createExportWrapper("dynCall_viiiij", 7);
+var dynCall_ijid = Module["dynCall_ijid"] = createExportWrapper("dynCall_ijid", 4);
 
-var dynCall_i = Module["dynCall_i"] = createExportWrapper("dynCall_i", 1);
+var dynCall_dji = Module["dynCall_dji"] = createExportWrapper("dynCall_dji", 3);
 
-var dynCall_iiiiiii = Module["dynCall_iiiiiii"] = createExportWrapper("dynCall_iiiiiii", 7);
+var dynCall_ijjijj = Module["dynCall_ijjijj"] = createExportWrapper("dynCall_ijjijj", 6);
 
-var dynCall_viiiii = Module["dynCall_viiiii"] = createExportWrapper("dynCall_viiiii", 6);
+var dynCall_ijjiijjjj = Module["dynCall_ijjiijjjj"] = createExportWrapper("dynCall_ijjiijjjj", 9);
 
-var dynCall_viiii = Module["dynCall_viiii"] = createExportWrapper("dynCall_viiii", 5);
-
-var dynCall_iiiij = Module["dynCall_iiiij"] = createExportWrapper("dynCall_iiiij", 6);
-
-var dynCall_vijii = Module["dynCall_vijii"] = createExportWrapper("dynCall_vijii", 6);
-
-var dynCall_iij = Module["dynCall_iij"] = createExportWrapper("dynCall_iij", 4);
-
-var dynCall_iijii = Module["dynCall_iijii"] = createExportWrapper("dynCall_iijii", 6);
-
-var dynCall_iiji = Module["dynCall_iiji"] = createExportWrapper("dynCall_iiji", 5);
-
-var dynCall_iiiiiij = Module["dynCall_iiiiiij"] = createExportWrapper("dynCall_iiiiiij", 8);
-
-var dynCall_iiid = Module["dynCall_iiid"] = createExportWrapper("dynCall_iiid", 4);
-
-var dynCall_iiij = Module["dynCall_iiij"] = createExportWrapper("dynCall_iiij", 5);
-
-var dynCall_dii = Module["dynCall_dii"] = createExportWrapper("dynCall_dii", 3);
-
-var dynCall_jii = Module["dynCall_jii"] = createExportWrapper("dynCall_jii", 3);
-
-var dynCall_iiiiiiiii = Module["dynCall_iiiiiiiii"] = createExportWrapper("dynCall_iiiiiiiii", 9);
-
-var dynCall_ji = Module["dynCall_ji"] = createExportWrapper("dynCall_ji", 2);
-
-var dynCall_vid = Module["dynCall_vid"] = createExportWrapper("dynCall_vid", 3);
-
-var dynCall_vij = Module["dynCall_vij"] = createExportWrapper("dynCall_vij", 4);
-
-var dynCall_iiiiiiiiii = Module["dynCall_iiiiiiiiii"] = createExportWrapper("dynCall_iiiiiiiiii", 10);
-
-var dynCall_v = Module["dynCall_v"] = createExportWrapper("dynCall_v", 1);
-
-var dynCall_di = Module["dynCall_di"] = createExportWrapper("dynCall_di", 2);
-
-var dynCall_iiiiijii = Module["dynCall_iiiiijii"] = createExportWrapper("dynCall_iiiiijii", 9);
+var dynCall_ijjjjjj = Module["dynCall_ijjjjjj"] = createExportWrapper("dynCall_ijjjjjj", 7);
 
 var dynCall_j = Module["dynCall_j"] = createExportWrapper("dynCall_j", 1);
 
-var dynCall_jj = Module["dynCall_jj"] = createExportWrapper("dynCall_jj", 3);
+var dynCall_vjijj = Module["dynCall_vjijj"] = createExportWrapper("dynCall_vjijj", 5);
 
-var dynCall_jiij = Module["dynCall_jiij"] = createExportWrapper("dynCall_jiij", 5);
+var dynCall_vjd = Module["dynCall_vjd"] = createExportWrapper("dynCall_vjd", 3);
 
-var dynCall_iiiiji = Module["dynCall_iiiiji"] = createExportWrapper("dynCall_iiiiji", 7);
+var dynCall_vjji = Module["dynCall_vjji"] = createExportWrapper("dynCall_vjji", 4);
 
-var dynCall_iiiijii = Module["dynCall_iiiijii"] = createExportWrapper("dynCall_iiiijii", 8);
+var dynCall_vji = Module["dynCall_vji"] = createExportWrapper("dynCall_vji", 3);
 
-var dynCall_ij = Module["dynCall_ij"] = createExportWrapper("dynCall_ij", 3);
+var dynCall_jijjj = Module["dynCall_jijjj"] = createExportWrapper("dynCall_jijjj", 5);
 
-var dynCall_viiji = Module["dynCall_viiji"] = createExportWrapper("dynCall_viiji", 6);
+var dynCall_ijjjjjjjjj = Module["dynCall_ijjjjjjjjj"] = createExportWrapper("dynCall_ijjjjjjjjj", 10);
 
-var dynCall_viijii = Module["dynCall_viijii"] = createExportWrapper("dynCall_viijii", 7);
+var dynCall_v = Module["dynCall_v"] = createExportWrapper("dynCall_v", 1);
 
-var dynCall_iiiiiiiiiii = Module["dynCall_iiiiiiiiiii"] = createExportWrapper("dynCall_iiiiiiiiiii", 11);
+var dynCall_dj = Module["dynCall_dj"] = createExportWrapper("dynCall_dj", 2);
 
-var dynCall_iiiijji = Module["dynCall_iiiijji"] = createExportWrapper("dynCall_iiiijji", 9);
+var dynCall_ijjjjjij = Module["dynCall_ijjjjjij"] = createExportWrapper("dynCall_ijjjjjij", 8);
+
+var dynCall_ijjii = Module["dynCall_ijjii"] = createExportWrapper("dynCall_ijjii", 5);
+
+var dynCall_vij = Module["dynCall_vij"] = createExportWrapper("dynCall_vij", 3);
+
+var dynCall_iijji = Module["dynCall_iijji"] = createExportWrapper("dynCall_iijji", 5);
+
+var dynCall_ijjiijjjjj = Module["dynCall_ijjiijjjjj"] = createExportWrapper("dynCall_ijjiijjjjj", 10);
+
+var dynCall_ijijji = Module["dynCall_ijijji"] = createExportWrapper("dynCall_ijijji", 6);
+
+var dynCall_vijj = Module["dynCall_vijj"] = createExportWrapper("dynCall_vijj", 4);
+
+var dynCall_ijijjj = Module["dynCall_ijijjj"] = createExportWrapper("dynCall_ijijjj", 6);
+
+var dynCall_ijijjji = Module["dynCall_ijijjji"] = createExportWrapper("dynCall_ijijjji", 7);
+
+var dynCall_vjjjji = Module["dynCall_vjjjji"] = createExportWrapper("dynCall_vjjjji", 6);
+
+var dynCall_ijjiijj = Module["dynCall_ijjiijj"] = createExportWrapper("dynCall_ijjiijj", 7);
+
+var dynCall_vjii = Module["dynCall_vjii"] = createExportWrapper("dynCall_vjii", 4);
+
+var dynCall_ijjiijjjjjj = Module["dynCall_ijjiijjjjjj"] = createExportWrapper("dynCall_ijjiijjjjjj", 11);
+
+var dynCall_jjjjij = Module["dynCall_jjjjij"] = createExportWrapper("dynCall_jjjjij", 6);
+
+var dynCall_ijjjjji = Module["dynCall_ijjjjji"] = createExportWrapper("dynCall_ijjjjji", 7);
+
+var dynCall_jjjji = Module["dynCall_jjjji"] = createExportWrapper("dynCall_jjjji", 5);
 
 var dynCall_dd = Module["dynCall_dd"] = createExportWrapper("dynCall_dd", 2);
 
 var dynCall_ddd = Module["dynCall_ddd"] = createExportWrapper("dynCall_ddd", 3);
 
-var dynCall_jiji = Module["dynCall_jiji"] = createExportWrapper("dynCall_jiji", 5);
-
-var dynCall_iidiiii = Module["dynCall_iidiiii"] = createExportWrapper("dynCall_iidiiii", 7);
-
-var dynCall_iiiiij = Module["dynCall_iiiiij"] = createExportWrapper("dynCall_iiiiij", 7);
-
-var dynCall_iiiiid = Module["dynCall_iiiiid"] = createExportWrapper("dynCall_iiiiid", 6);
-
-var dynCall_iiiiijj = Module["dynCall_iiiiijj"] = createExportWrapper("dynCall_iiiiijj", 9);
-
-var dynCall_iiiiiiii = Module["dynCall_iiiiiiii"] = createExportWrapper("dynCall_iiiiiiii", 8);
-
-var dynCall_iiiiiijj = Module["dynCall_iiiiiijj"] = createExportWrapper("dynCall_iiiiiijj", 10);
-
-var dynCall_viiiiii = Module["dynCall_viiiiii"] = createExportWrapper("dynCall_viiiiii", 7);
-
-var dynCall_viijj = Module["dynCall_viijj"] = createExportWrapper("dynCall_viijj", 7);
-
-var dynCall_vfiii = Module["dynCall_vfiii"] = createExportWrapper("dynCall_vfiii", 5);
-
-var dynCall_viiiiff = Module["dynCall_viiiiff"] = createExportWrapper("dynCall_viiiiff", 7);
-
-var dynCall_viiiiiff = Module["dynCall_viiiiiff"] = createExportWrapper("dynCall_viiiiiff", 8);
-
-var dynCall_ffff = Module["dynCall_ffff"] = createExportWrapper("dynCall_ffff", 4);
-
-var dynCall_viiff = Module["dynCall_viiff"] = createExportWrapper("dynCall_viiff", 5);
-
-var dynCall_fffffff = Module["dynCall_fffffff"] = createExportWrapper("dynCall_fffffff", 7);
-
-var dynCall_jjjjjjj = Module["dynCall_jjjjjjj"] = createExportWrapper("dynCall_jjjjjjj", 13);
-
-var dynCall_jjjjjj = Module["dynCall_jjjjjj"] = createExportWrapper("dynCall_jjjjjj", 11);
-
-var dynCall_iijjii = Module["dynCall_iijjii"] = createExportWrapper("dynCall_iijjii", 8);
-
-var dynCall_viiiiiiiiiiiii = Module["dynCall_viiiiiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiiiiii", 14);
-
-var dynCall_viiiiiiiiii = Module["dynCall_viiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiii", 11);
-
-var dynCall_viiiiiiii = Module["dynCall_viiiiiiii"] = createExportWrapper("dynCall_viiiiiiii", 9);
-
-var dynCall_viiiiiiiiiii = Module["dynCall_viiiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiiii", 12);
-
-var dynCall_viiiiiiiiiiii = Module["dynCall_viiiiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiiiii", 13);
-
-var dynCall_viiiiiiiiiiiiiiiiii = Module["dynCall_viiiiiiiiiiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiiiiiiiiiii", 19);
-
-var dynCall_viiiiiiiii = Module["dynCall_viiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiii", 10);
-
-var dynCall_viiiiiiiiiiiiiiiiiii = Module["dynCall_viiiiiiiiiiiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiiiiiiiiiiii", 20);
-
-var dynCall_viiiiiii = Module["dynCall_viiiiiii"] = createExportWrapper("dynCall_viiiiiii", 8);
-
-var dynCall_viiiiiiiiiiiiiii = Module["dynCall_viiiiiiiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiiiiiiii", 16);
-
-var dynCall_iiiiiiiiiiiii = Module["dynCall_iiiiiiiiiiiii"] = createExportWrapper("dynCall_iiiiiiiiiiiii", 13);
-
-var dynCall_iif = Module["dynCall_iif"] = createExportWrapper("dynCall_iif", 3);
-
-var dynCall_fii = Module["dynCall_fii"] = createExportWrapper("dynCall_fii", 3);
-
-var dynCall_jiiii = Module["dynCall_jiiii"] = createExportWrapper("dynCall_jiiii", 5);
-
 var dynCall_jiii = Module["dynCall_jiii"] = createExportWrapper("dynCall_jiii", 4);
 
-var dynCall_fiii = Module["dynCall_fiii"] = createExportWrapper("dynCall_fiii", 4);
+var dynCall_jjii = Module["dynCall_jjii"] = createExportWrapper("dynCall_jjii", 4);
 
-var dynCall_viij = Module["dynCall_viij"] = createExportWrapper("dynCall_viij", 5);
+var dynCall_ijiijj = Module["dynCall_ijiijj"] = createExportWrapper("dynCall_ijiijj", 6);
 
-var dynCall_viif = Module["dynCall_viif"] = createExportWrapper("dynCall_viif", 4);
+var dynCall_ijjijij = Module["dynCall_ijjijij"] = createExportWrapper("dynCall_ijjijij", 7);
 
-var dynCall_viiijii = Module["dynCall_viiijii"] = createExportWrapper("dynCall_viiijii", 8);
+var dynCall_jjji = Module["dynCall_jjji"] = createExportWrapper("dynCall_jjji", 4);
 
-var dynCall_viijiiiiiiiiii = Module["dynCall_viijiiiiiiiiii"] = createExportWrapper("dynCall_viijiiiiiiiiii", 15);
+var dynCall_ijdiiii = Module["dynCall_ijdiiii"] = createExportWrapper("dynCall_ijdiiii", 7);
 
-var dynCall_viiij = Module["dynCall_viiij"] = createExportWrapper("dynCall_viiij", 6);
+var dynCall_vjjjii = Module["dynCall_vjjjii"] = createExportWrapper("dynCall_vjjjii", 6);
 
-var dynCall_fi = Module["dynCall_fi"] = createExportWrapper("dynCall_fi", 2);
+var dynCall_ijjjjjjjj = Module["dynCall_ijjjjjjjj"] = createExportWrapper("dynCall_ijjjjjjjj", 9);
 
-var dynCall_fiiii = Module["dynCall_fiiii"] = createExportWrapper("dynCall_fiiii", 5);
+var dynCall_jjjjjjj = Module["dynCall_jjjjjjj"] = createExportWrapper("dynCall_jjjjjjj", 7);
 
-var dynCall_fif = Module["dynCall_fif"] = createExportWrapper("dynCall_fif", 3);
+var dynCall_jjjjii = Module["dynCall_jjjjii"] = createExportWrapper("dynCall_jjjjii", 6);
 
-var dynCall_jfi = Module["dynCall_jfi"] = createExportWrapper("dynCall_jfi", 3);
+var dynCall_jjjjid = Module["dynCall_jjjjid"] = createExportWrapper("dynCall_jjjjid", 6);
 
-var dynCall_viiiiiiiiiiiiii = Module["dynCall_viiiiiiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiiiiiii", 15);
+var dynCall_jjjjijj = Module["dynCall_jjjjijj"] = createExportWrapper("dynCall_jjjjijj", 7);
 
-var dynCall_viiiiiiiiiiiiiiiiiiii = Module["dynCall_viiiiiiiiiiiiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiiiiiiiiiiiii", 21);
+var dynCall_jjjjjjjii = Module["dynCall_jjjjjjjii"] = createExportWrapper("dynCall_jjjjjjjii", 9);
 
-var dynCall_viiiiiiiiiiiiiiii = Module["dynCall_viiiiiiiiiiiiiiii"] = createExportWrapper("dynCall_viiiiiiiiiiiiiiii", 17);
+var dynCall_jjjjijii = Module["dynCall_jjjjijii"] = createExportWrapper("dynCall_jjjjijii", 8);
+
+var dynCall_jjjjijjj = Module["dynCall_jjjjijjj"] = createExportWrapper("dynCall_jjjjijjj", 8);
+
+var dynCall_jjjijijj = Module["dynCall_jjjijijj"] = createExportWrapper("dynCall_jjjijijj", 8);
+
+var dynCall_jjjijij = Module["dynCall_jjjijij"] = createExportWrapper("dynCall_jjjijij", 7);
+
+var dynCall_vjjjiij = Module["dynCall_vjjjiij"] = createExportWrapper("dynCall_vjjjiij", 7);
+
+var dynCall_vjjjjii = Module["dynCall_vjjjjii"] = createExportWrapper("dynCall_vjjjjii", 7);
+
+var dynCall_ifj = Module["dynCall_ifj"] = createExportWrapper("dynCall_ifj", 3);
+
+var dynCall_vijjjjjji = Module["dynCall_vijjjjjji"] = createExportWrapper("dynCall_vijjjjjji", 9);
+
+var dynCall_vjjjjj = Module["dynCall_vjjjjj"] = createExportWrapper("dynCall_vjjjjj", 6);
 
 var _asyncify_start_unwind = createExportWrapper("asyncify_start_unwind", 1);
 
@@ -5368,14 +5222,14 @@ var _asyncify_start_rewind = createExportWrapper("asyncify_start_rewind", 1);
 
 var _asyncify_stop_rewind = createExportWrapper("asyncify_stop_rewind", 0);
 
-var ___start_em_js = Module["___start_em_js"] = 1177996;
+var ___start_em_js = Module["___start_em_js"] = 568176;
 
-var ___stop_em_js = Module["___stop_em_js"] = 1178422;
+var ___stop_em_js = Module["___stop_em_js"] = 568602;
 
-function invoke_vii(index, a1, a2) {
+function invoke_vjj(index, a1, a2) {
  var sp = stackSave();
  try {
-  dynCall_vii(index, a1, a2);
+  dynCall_vjj(Number(index), a1, a2);
  } catch (e) {
   stackRestore(sp);
   if (e !== e + 0) throw e;
@@ -5385,17 +5239,39 @@ function invoke_vii(index, a1, a2) {
 
 function applySignatureConversions(wasmExports) {
  wasmExports = Object.assign({}, wasmExports);
- var makeWrapper_pp = f => a0 => f(a0) >>> 0;
- var makeWrapper_ppp = f => (a0, a1) => f(a0, a1) >>> 0;
- var makeWrapper_pP = f => a0 => f(a0) >>> 0;
- var makeWrapper_p = f => () => f() >>> 0;
+ var makeWrapper_pp = f => function(a0) {
+  return Number(f(BigInt(a0)));
+ };
+ var makeWrapper___PP = f => function(a0, a1, a2) {
+  return f(a0, BigInt(a1 ? a1 : 0), BigInt(a2 ? a2 : 0));
+ };
+ var makeWrapper__p = f => function(a0) {
+  return f(BigInt(a0));
+ };
+ var makeWrapper_ppp = f => function(a0, a1) {
+  return Number(f(BigInt(a0), BigInt(a1)));
+ };
+ var makeWrapper_pP = f => function(a0) {
+  return Number(f(BigInt(a0 ? a0 : 0)));
+ };
+ var makeWrapper_p = f => function() {
+  return Number(f());
+ };
  wasmExports["malloc"] = makeWrapper_pp(wasmExports["malloc"]);
+ wasmExports["main"] = makeWrapper___PP(wasmExports["main"]);
+ wasmExports["free"] = makeWrapper__p(wasmExports["free"]);
+ wasmExports["fflush"] = makeWrapper__p(wasmExports["fflush"]);
  wasmExports["emscripten_builtin_memalign"] = makeWrapper_ppp(wasmExports["emscripten_builtin_memalign"]);
  wasmExports["sbrk"] = makeWrapper_pP(wasmExports["sbrk"]);
+ wasmExports["setThrew"] = makeWrapper__p(wasmExports["setThrew"]);
  wasmExports["emscripten_stack_get_base"] = makeWrapper_p(wasmExports["emscripten_stack_get_base"]);
  wasmExports["emscripten_stack_get_end"] = makeWrapper_p(wasmExports["emscripten_stack_get_end"]);
+ wasmExports["_emscripten_stack_restore"] = makeWrapper__p(wasmExports["_emscripten_stack_restore"]);
  wasmExports["_emscripten_stack_alloc"] = makeWrapper_pp(wasmExports["_emscripten_stack_alloc"]);
  wasmExports["emscripten_stack_get_current"] = makeWrapper_p(wasmExports["emscripten_stack_get_current"]);
+ wasmExports["__cxa_is_pointer_type"] = makeWrapper__p(wasmExports["__cxa_is_pointer_type"]);
+ wasmExports["asyncify_start_unwind"] = makeWrapper__p(wasmExports["asyncify_start_unwind"]);
+ wasmExports["asyncify_start_rewind"] = makeWrapper__p(wasmExports["asyncify_start_rewind"]);
  return wasmExports;
 }
 
@@ -5434,11 +5310,11 @@ Module["FS_createDataFile"] = FS.createDataFile;
 
 Module["FS_unlink"] = FS.unlink;
 
-var missingLibrarySymbols = [ "writeI53ToI64", "writeI53ToI64Clamped", "writeI53ToI64Signaling", "writeI53ToU64Clamped", "writeI53ToU64Signaling", "readI53FromU64", "convertI32PairToI53", "convertU32PairToI53", "getTempRet0", "inetPton4", "inetNtop4", "inetPton6", "inetNtop6", "readSockaddr", "writeSockaddr", "emscriptenLog", "runMainThreadEmAsm", "jstoi_q", "listenOnce", "autoResumeAudioContext", "dynCallLegacy", "getDynCaller", "dynCall", "asmjsMangle", "HandleAllocator", "getNativeTypeSize", "STACK_SIZE", "STACK_ALIGN", "POINTER_SIZE", "ASSERTIONS", "uleb128Encode", "generateFuncType", "convertJsFunctionToWasm", "getEmptyTableSlot", "updateTableMap", "getFunctionAddress", "addFunction", "removeFunction", "reallyNegative", "unSign", "strLen", "reSign", "formatString", "intArrayToString", "AsciiToString", "UTF16ToString", "stringToUTF16", "lengthBytesUTF16", "UTF32ToString", "stringToUTF32", "lengthBytesUTF32", "stringToNewUTF8", "registerKeyEventCallback", "maybeCStringToJsString", "findEventTarget", "getBoundingClientRect", "fillMouseEventData", "registerMouseEventCallback", "registerWheelEventCallback", "registerUiEventCallback", "registerFocusEventCallback", "fillDeviceOrientationEventData", "registerDeviceOrientationEventCallback", "fillDeviceMotionEventData", "registerDeviceMotionEventCallback", "screenOrientation", "fillOrientationChangeEventData", "registerOrientationChangeEventCallback", "fillFullscreenChangeEventData", "registerFullscreenChangeEventCallback", "JSEvents_requestFullscreen", "JSEvents_resizeCanvasForFullscreen", "registerRestoreOldStyle", "hideEverythingExceptGivenElement", "restoreHiddenElements", "setLetterbox", "softFullscreenResizeWebGLRenderTarget", "doRequestFullscreen", "fillPointerlockChangeEventData", "registerPointerlockChangeEventCallback", "registerPointerlockErrorEventCallback", "requestPointerLock", "fillVisibilityChangeEventData", "registerVisibilityChangeEventCallback", "registerTouchEventCallback", "fillGamepadEventData", "registerGamepadEventCallback", "registerBeforeUnloadEventCallback", "fillBatteryEventData", "battery", "registerBatteryEventCallback", "setCanvasElementSize", "getCanvasElementSize", "getCallstack", "convertPCtoSourceLocation", "checkWasiClock", "wasiRightsToMuslOFlags", "wasiOFlagsToMuslOFlags", "createDyncallWrapper", "safeSetTimeout", "setImmediateWrapped", "clearImmediateWrapped", "polyfillSetImmediate", "getPromise", "makePromise", "idsToPromises", "makePromiseCallback", "findMatchingCatch", "Browser_asyncPrepareDataCounter", "setMainLoop", "getSocketFromFD", "getSocketAddress", "FS_mkdirTree", "_setNetworkCallback", "heapObjectForWebGLType", "toTypedArrayIndex", "webgl_enable_ANGLE_instanced_arrays", "webgl_enable_OES_vertex_array_object", "webgl_enable_WEBGL_draw_buffers", "webgl_enable_WEBGL_multi_draw", "emscriptenWebGLGet", "computeUnpackAlignedImageSize", "colorChannelsInGlTextureFormat", "emscriptenWebGLGetTexPixelData", "emscriptenWebGLGetUniform", "webglGetUniformLocation", "webglPrepareUniformLocationsBeforeFirstUse", "webglGetLeftBracePos", "emscriptenWebGLGetVertexAttrib", "__glGetActiveAttribOrUniform", "writeGLArray", "registerWebGlEventCallback", "ALLOC_NORMAL", "ALLOC_STACK", "allocate", "writeStringToMemory", "writeAsciiToMemory", "setErrNo", "demangle", "stackTrace" ];
+var missingLibrarySymbols = [ "writeI53ToI64", "writeI53ToI64Clamped", "writeI53ToI64Signaling", "writeI53ToU64Clamped", "writeI53ToU64Signaling", "readI53FromU64", "convertI32PairToI53", "convertI32PairToI53Checked", "convertU32PairToI53", "getTempRet0", "setTempRet0", "inetPton4", "inetNtop4", "inetPton6", "inetNtop6", "readSockaddr", "writeSockaddr", "emscriptenLog", "readEmAsmArgs", "jstoi_q", "listenOnce", "autoResumeAudioContext", "dynCallLegacy", "getDynCaller", "dynCall", "asmjsMangle", "HandleAllocator", "getNativeTypeSize", "STACK_SIZE", "STACK_ALIGN", "POINTER_SIZE", "ASSERTIONS", "uleb128Encode", "generateFuncType", "convertJsFunctionToWasm", "getEmptyTableSlot", "updateTableMap", "getFunctionAddress", "addFunction", "removeFunction", "reallyNegative", "unSign", "strLen", "reSign", "formatString", "intArrayToString", "AsciiToString", "UTF16ToString", "stringToUTF16", "lengthBytesUTF16", "UTF32ToString", "stringToUTF32", "lengthBytesUTF32", "stringToNewUTF8", "registerKeyEventCallback", "maybeCStringToJsString", "findEventTarget", "getBoundingClientRect", "fillMouseEventData", "registerMouseEventCallback", "registerWheelEventCallback", "registerUiEventCallback", "registerFocusEventCallback", "fillDeviceOrientationEventData", "registerDeviceOrientationEventCallback", "fillDeviceMotionEventData", "registerDeviceMotionEventCallback", "screenOrientation", "fillOrientationChangeEventData", "registerOrientationChangeEventCallback", "fillFullscreenChangeEventData", "registerFullscreenChangeEventCallback", "JSEvents_requestFullscreen", "JSEvents_resizeCanvasForFullscreen", "registerRestoreOldStyle", "hideEverythingExceptGivenElement", "restoreHiddenElements", "setLetterbox", "softFullscreenResizeWebGLRenderTarget", "doRequestFullscreen", "fillPointerlockChangeEventData", "registerPointerlockChangeEventCallback", "registerPointerlockErrorEventCallback", "requestPointerLock", "fillVisibilityChangeEventData", "registerVisibilityChangeEventCallback", "registerTouchEventCallback", "fillGamepadEventData", "registerGamepadEventCallback", "registerBeforeUnloadEventCallback", "fillBatteryEventData", "battery", "registerBatteryEventCallback", "setCanvasElementSize", "getCanvasElementSize", "jsStackTrace", "getCallstack", "convertPCtoSourceLocation", "checkWasiClock", "wasiRightsToMuslOFlags", "wasiOFlagsToMuslOFlags", "createDyncallWrapper", "safeSetTimeout", "setImmediateWrapped", "clearImmediateWrapped", "polyfillSetImmediate", "getPromise", "makePromise", "idsToPromises", "makePromiseCallback", "findMatchingCatch", "Browser_asyncPrepareDataCounter", "setMainLoop", "getSocketFromFD", "getSocketAddress", "FS_mkdirTree", "_setNetworkCallback", "heapObjectForWebGLType", "toTypedArrayIndex", "webgl_enable_ANGLE_instanced_arrays", "webgl_enable_OES_vertex_array_object", "webgl_enable_WEBGL_draw_buffers", "webgl_enable_WEBGL_multi_draw", "emscriptenWebGLGet", "computeUnpackAlignedImageSize", "colorChannelsInGlTextureFormat", "emscriptenWebGLGetTexPixelData", "emscriptenWebGLGetUniform", "webglGetUniformLocation", "webglPrepareUniformLocationsBeforeFirstUse", "webglGetLeftBracePos", "emscriptenWebGLGetVertexAttrib", "__glGetActiveAttribOrUniform", "writeGLArray", "registerWebGlEventCallback", "ALLOC_NORMAL", "ALLOC_STACK", "allocate", "writeStringToMemory", "writeAsciiToMemory", "setErrNo", "demangle", "stackTrace" ];
 
 missingLibrarySymbols.forEach(missingLibrarySymbol);
 
-var unexportedSymbols = [ "run", "addOnPreRun", "addOnInit", "addOnPreMain", "addOnExit", "addOnPostRun", "FS_createFolder", "FS_createLink", "FS_readFile", "out", "err", "callMain", "abort", "wasmMemory", "wasmExports", "writeStackCookie", "checkStackCookie", "readI53FromI64", "convertI32PairToI53Checked", "stackSave", "stackRestore", "stackAlloc", "setTempRet0", "ptrToString", "zeroMemory", "exitJS", "getHeapMax", "growMemory", "ENV", "MONTH_DAYS_REGULAR", "MONTH_DAYS_LEAP", "MONTH_DAYS_REGULAR_CUMULATIVE", "MONTH_DAYS_LEAP_CUMULATIVE", "isLeapYear", "ydayFromDate", "arraySum", "addDays", "ERRNO_CODES", "ERRNO_MESSAGES", "DNS", "Protocols", "Sockets", "initRandomFill", "randomFill", "timers", "warnOnce", "readEmAsmArgsArray", "readEmAsmArgs", "runEmAsmFunction", "jstoi_s", "getExecutableName", "handleException", "keepRuntimeAlive", "runtimeKeepalivePush", "runtimeKeepalivePop", "callUserCallback", "maybeExit", "asyncLoad", "alignMemory", "mmapAlloc", "wasmTable", "noExitRuntime", "getCFunc", "ccall", "sigToWasmTypes", "freeTableIndexes", "functionsInTableMap", "setValue", "getValue", "PATH", "PATH_FS", "UTF8Decoder", "UTF8ArrayToString", "UTF8ToString", "stringToUTF8Array", "stringToUTF8", "lengthBytesUTF8", "intArrayFromString", "stringToAscii", "UTF16Decoder", "stringToUTF8OnStack", "writeArrayToMemory", "JSEvents", "specialHTMLTargets", "findCanvasEventTarget", "currentFullscreenStrategy", "restoreOldWindowedStyle", "jsStackTrace", "UNWIND_CACHE", "ExitStatus", "getEnvStrings", "doReadv", "doWritev", "promiseMap", "uncaughtExceptionCount", "exceptionLast", "exceptionCaught", "ExceptionInfo", "Browser", "getPreloadedImageData__data", "wget", "SYSCALLS", "preloadPlugins", "FS_modeStringToFlags", "FS_getMode", "FS_stdin_getChar_buffer", "FS_stdin_getChar", "FS", "MEMFS", "TTY", "PIPEFS", "SOCKFS", "tempFixedLengthArray", "miniTempWebGLFloatBuffers", "miniTempWebGLIntBuffers", "GL", "AL", "GLUT", "EGL", "GLEW", "IDBStore", "runAndAbortIfError", "Asyncify", "Fibers", "SDL", "SDL_gfx", "allocateUTF8", "allocateUTF8OnStack" ];
+var unexportedSymbols = [ "run", "addOnPreRun", "addOnInit", "addOnPreMain", "addOnExit", "addOnPostRun", "FS_createFolder", "FS_createLink", "FS_readFile", "out", "err", "callMain", "abort", "wasmMemory", "wasmExports", "writeStackCookie", "checkStackCookie", "readI53FromI64", "MAX_INT53", "MIN_INT53", "bigintToI53Checked", "stackSave", "stackRestore", "stackAlloc", "ptrToString", "zeroMemory", "exitJS", "getHeapMax", "growMemory", "ENV", "MONTH_DAYS_REGULAR", "MONTH_DAYS_LEAP", "MONTH_DAYS_REGULAR_CUMULATIVE", "MONTH_DAYS_LEAP_CUMULATIVE", "isLeapYear", "ydayFromDate", "arraySum", "addDays", "ERRNO_CODES", "ERRNO_MESSAGES", "DNS", "Protocols", "Sockets", "initRandomFill", "randomFill", "timers", "warnOnce", "readEmAsmArgsArray", "jstoi_s", "getExecutableName", "handleException", "keepRuntimeAlive", "runtimeKeepalivePush", "runtimeKeepalivePop", "callUserCallback", "maybeExit", "asyncLoad", "alignMemory", "mmapAlloc", "wasmTable", "noExitRuntime", "getCFunc", "ccall", "sigToWasmTypes", "freeTableIndexes", "functionsInTableMap", "setValue", "getValue", "PATH", "PATH_FS", "UTF8Decoder", "UTF8ArrayToString", "UTF8ToString", "stringToUTF8Array", "stringToUTF8", "lengthBytesUTF8", "intArrayFromString", "stringToAscii", "UTF16Decoder", "stringToUTF8OnStack", "writeArrayToMemory", "JSEvents", "specialHTMLTargets", "findCanvasEventTarget", "currentFullscreenStrategy", "restoreOldWindowedStyle", "UNWIND_CACHE", "ExitStatus", "getEnvStrings", "doReadv", "doWritev", "promiseMap", "uncaughtExceptionCount", "exceptionLast", "exceptionCaught", "ExceptionInfo", "Browser", "getPreloadedImageData__data", "wget", "SYSCALLS", "preloadPlugins", "FS_modeStringToFlags", "FS_getMode", "FS_stdin_getChar_buffer", "FS_stdin_getChar", "FS", "MEMFS", "TTY", "PIPEFS", "SOCKFS", "tempFixedLengthArray", "miniTempWebGLFloatBuffers", "miniTempWebGLIntBuffers", "GL", "AL", "GLUT", "EGL", "GLEW", "IDBStore", "runAndAbortIfError", "Asyncify", "Fibers", "SDL", "SDL_gfx", "allocateUTF8", "allocateUTF8OnStack" ];
 
 unexportedSymbols.forEach(unexportedRuntimeSymbol);
 
