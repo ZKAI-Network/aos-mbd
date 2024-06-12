@@ -646,7 +646,7 @@ function unexportedRuntimeSymbol(sym) {
 }
 
 var ASM_CONSTS = {
- 1178422: ($0, $1, $2, $3) => {
+ 1577274: ($0, $1, $2, $3) => {
   if (typeof Module == "undefined" || !Module.MountedFiles) {
    return 1;
   }
@@ -671,7 +671,7 @@ var ASM_CONSTS = {
    return 4;
   }
  },
- 1178923: () => (typeof wasmOffsetConverter !== "undefined")
+ 1577775: () => (typeof wasmOffsetConverter !== "undefined")
 };
 
 function __asyncjs__weavedrive_open(c_filename, mode) {
@@ -5346,6 +5346,12 @@ var dynCall_viijiiiiiiiiii = Module["dynCall_viijiiiiiiiiii"] = createExportWrap
 
 var dynCall_viiij = Module["dynCall_viiij"] = createExportWrapper("dynCall_viiij", 6);
 
+var dynCall_viji = Module["dynCall_viji"] = createExportWrapper("dynCall_viji", 5);
+
+var dynCall_vifi = Module["dynCall_vifi"] = createExportWrapper("dynCall_vifi", 4);
+
+var dynCall_vidi = Module["dynCall_vidi"] = createExportWrapper("dynCall_vidi", 4);
+
 var dynCall_fi = Module["dynCall_fi"] = createExportWrapper("dynCall_fi", 2);
 
 var dynCall_fiiii = Module["dynCall_fiiii"] = createExportWrapper("dynCall_fiiii", 5);
@@ -5368,9 +5374,9 @@ var _asyncify_start_rewind = createExportWrapper("asyncify_start_rewind", 1);
 
 var _asyncify_stop_rewind = createExportWrapper("asyncify_stop_rewind", 0);
 
-var ___start_em_js = Module["___start_em_js"] = 1177996;
+var ___start_em_js = Module["___start_em_js"] = 1576848;
 
-var ___stop_em_js = Module["___stop_em_js"] = 1178422;
+var ___stop_em_js = Module["___stop_em_js"] = 1577274;
 
 function invoke_vii(index, a1, a2) {
  var sp = stackSave();

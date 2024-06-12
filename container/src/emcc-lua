@@ -201,13 +201,29 @@ def main():
     cmd.extend([quote(v.filepath) for v in link_libraries])
     cmd.extend(['-s', 'EXPORTED_FUNCTIONS=["_malloc"]'])
     # Append onnx runtime modules to linked libraries
-    cmd.extend(['-I', '/onnxruntime/include/onnxruntime/core/session', '-I','/onnxruntime/build/MacOs/Release/'])
-    # Define the base directory
-    base_dir = '/onnxruntime/build/MacOs/Release/'
+    cmd.extend(['-I', '/onnxruntime/include/onnxruntime/core/session', 
+                '-I', '/onnxruntime/include/onnxruntime/core/optimizer',
+                '-I', '/onnxruntime/include/onnxruntime/core/providers',
+                '-I', '/onnxruntime/include/onnxruntime/core/coomon',
+                # '-I', '/onnxruntime/include/onnxruntime/core/framework',
+                '-I', '/onnxruntime/include/onnxruntime/core/graph',
+                '-I', '/onnxruntime/include/onnxruntime/core/eager',
+                '-I', '/onnxruntime/include/onnxruntime/core/platform',])
+    cmd.extend(['-I','/onnxruntime/build/MacOs/Release/'])
+    # base_dir = '/onnxruntime/include/onnxruntime/core/session'
+    # lib_files = glob.glob(os.path.join(base_dir, '**/*.a'), recursive=True)
+    # print(lib_files)
+    # cmd.extend(lib_files)
+    # header_files = glob.glob(os.path.join(base_dir, '**/*.h'), recursive=True)
+    # print(header_files)
 
+    # Define the base onnxruntime artifacts directory
+    base_dir = '/onnxruntime/build/MacOs/Release/'
     # List all .a files in the directory and its subdirectories
     lib_files = glob.glob(os.path.join(base_dir, '**/*.a'), recursive=True)
-    print(lib_files)
+    # print(lib_files)
+    # header_files = glob.glob(os.path.join(base_dir, '**/*.h'), recursive=True)
+    # print(header_files)
     # Add all library files found
     cmd.extend(lib_files)
 

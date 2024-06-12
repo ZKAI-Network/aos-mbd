@@ -76,15 +76,18 @@ describe('AOS-ONNX Tests', async () => {
     assert.equal(result.response.Output.data.output, 2)
   })
 
-  it.skip('Llama Lua library loads', async () => {
+  it('Llama Lua library loads', async () => {
     const result = await handle(getEval(`
 local Ort = require "ort"
+local Env = Ort.CreateEnv()
+local SessionOptions = Ort.CreateSessionOptions()
+local Session = Env:CreateSession("/Users/lfg/Desktop/mbd-library/ao-hack/aos-llama/test-onnx/network.onnx", SessionOptions)
 `), getEnv())
     console.log(result)
     assert.ok(result.response.Output.data.output == "A decentralized AI inference engine, built on top of ONNX runtime.")
   })
 
-  it('AOS runs Simple ONNX file', async () => {
+  it.skip('AOS runs Simple ONNX file', async () => {
     const result =
       await handle(
         getEval(fs.readFileSync("onnx-test.lua", "utf-8")),

@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <wchar.h>
 #include <stdint.h>
-
 #include <lua.h>
 #include <lauxlib.h>
 #include "onnxruntime_c_api.h"
+// #include "onnxruntime_cxx_api.h"
+// #include "onnxruntime_cxx_inline.h"
+
 
 const OrtApi* g_ort = NULL;
 
@@ -104,7 +107,7 @@ static int lort_createsessionoptions (lua_State *L) {
     OrtSessionOptions* session_options;
     ORT_LUA_ERROR(L, g_ort->CreateSessionOptions(&session_options));
     if (session_options == NULL) { luaL_error(L, "Failed options creating."); }
-
+    
     OrtSessionOptions** luaptr = (OrtSessionOptions**)lua_newuserdata(L, sizeof(OrtSessionOptions*));
     *luaptr = session_options;
 
@@ -207,16 +210,21 @@ static int lort_env_createsession (lua_State *L) {
     OrtEnv* env = *(OrtEnv**)luaL_checkudata(L, 1, "Ort.Env");
     size_t pathlen;
     const char* modelpath = lua_tolstring(L, 2, &pathlen);
+    printf("Model path: %s\n", modelpath);  
+
     wchar_t* wmodelpath = (wchar_t*)calloc(pathlen+1, sizeof(wchar_t));
+    wprintf(L"wmodelpath: %ls\n", wmodelpath);
     mbstowcs(wmodelpath, modelpath, pathlen);
     OrtSessionOptions* session_options = *(OrtSessionOptions**)luaL_checkudata(L, 3, "Ort.SessionOptions");
 
     OrtSession* session;
+    printf("Creating session\n");
     ORT_LUA_ERROR(L, g_ort->CreateSession(env, (const char *)wmodelpath, session_options, &session));
     if (session == NULL) { luaL_error(L, "Failed env creating."); }
 
     OrtSession** luaptr = (OrtSession**)lua_newuserdata(L, sizeof(OrtSession*));
     *luaptr = session;
+    printf("Session created\n");
     luaL_getmetatable(L, "Ort.Session");    
     lua_setmetatable(L, -2);
 
