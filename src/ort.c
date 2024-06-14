@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <wchar.h>
 #include <stdint.h>
 #include <lua.h>
+#include <lualib.h>
 #include <lauxlib.h>
 #include "onnxruntime_c_api.h"
 // #include "onnxruntime_cxx_api.h"
@@ -97,7 +99,7 @@ static int lort_createenv (lua_State *L) {
     OrtEnv** luaptr = (OrtEnv**)lua_newuserdata(L, sizeof(OrtEnv*));
     *luaptr = env;
 
-    luaL_getmetatable(L, "Ort.Env");    
+    luaL_getmetatable(L, "Ort.Env");
     lua_setmetatable(L, -2);
 
     return 1;
@@ -107,11 +109,11 @@ static int lort_createsessionoptions (lua_State *L) {
     OrtSessionOptions* session_options;
     ORT_LUA_ERROR(L, g_ort->CreateSessionOptions(&session_options));
     if (session_options == NULL) { luaL_error(L, "Failed options creating."); }
-    
+
     OrtSessionOptions** luaptr = (OrtSessionOptions**)lua_newuserdata(L, sizeof(OrtSessionOptions*));
     *luaptr = session_options;
 
-    luaL_getmetatable(L, "Ort.SessionOptions");    
+    luaL_getmetatable(L, "Ort.SessionOptions");
     lua_setmetatable(L, -2);
 
     return 1;
@@ -161,7 +163,7 @@ static int lort_createvalue (lua_State *L) {
                     luaL_error(L, "Data must be number table");
                     return 0;
                 }
-                
+
                 lua_Number el = lua_tonumber(L, -1);
                 switch (element_data_type)
                 {
@@ -172,7 +174,7 @@ static int lort_createvalue (lua_State *L) {
                 case ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE:
                     ((double*)modelort_inputc)[i] = (double) el;
                     break;
-                
+
                 default:
                     luaL_error(L, "Not implemented tensor type %i", (int)element_data_type);
                     break;
@@ -184,7 +186,7 @@ static int lort_createvalue (lua_State *L) {
 
     OrtValue** luaptr = (OrtValue**)lua_newuserdata(L, sizeof(OrtValue*));
     *luaptr = input_tensor;
-    luaL_getmetatable(L, "Ort.Value");    
+    luaL_getmetatable(L, "Ort.Value");
     lua_setmetatable(L, -2);
 
     free(input_shape);
@@ -200,6 +202,22 @@ static const struct luaL_Reg ort_m [] = {
 };
 
 
+
+void list_files() {
+    DIR *d;
+    struct dirent *dir;
+
+    d = opendir(".");
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            printf("%s\n", dir->d_name);
+        }
+        closedir(d);
+    } else {
+        perror("opendir");
+    }
+}
+
 // Env
 
 static int lort_env_createsession (lua_State *L) {
@@ -207,25 +225,28 @@ static int lort_env_createsession (lua_State *L) {
     luaL_checktype(L, 2, LUA_TSTRING);
     luaL_checktype(L, 3, LUA_TUSERDATA);
 
+    const _In_ const ORTCHAR_T* modelpath = luaL_checkstring(L, 2);
+    printf("Model path: %s\n", modelpath);
+    int pathlen=sizeof(modelpath);
+
+    list_files();
+
     OrtEnv* env = *(OrtEnv**)luaL_checkudata(L, 1, "Ort.Env");
-    size_t pathlen;
-    const char* modelpath = lua_tolstring(L, 2, &pathlen);
-    printf("Model path: %s\n", modelpath);  
 
     wchar_t* wmodelpath = (wchar_t*)calloc(pathlen+1, sizeof(wchar_t));
-    wprintf(L"wmodelpath: %ls\n", wmodelpath);
     mbstowcs(wmodelpath, modelpath, pathlen);
+    wprintf(L"wmodelpath: %ls\n", wmodelpath);
     OrtSessionOptions* session_options = *(OrtSessionOptions**)luaL_checkudata(L, 3, "Ort.SessionOptions");
 
     OrtSession* session;
     printf("Creating session\n");
-    ORT_LUA_ERROR(L, g_ort->CreateSession(env, (const char *)wmodelpath, session_options, &session));
+    ORT_LUA_ERROR(L, g_ort->CreateSession(env,modelpath, session_options, &session));
     if (session == NULL) { luaL_error(L, "Failed env creating."); }
 
     OrtSession** luaptr = (OrtSession**)lua_newuserdata(L, sizeof(OrtSession*));
     *luaptr = session;
     printf("Session created\n");
-    luaL_getmetatable(L, "Ort.Session");    
+    luaL_getmetatable(L, "Ort.Session");
     lua_setmetatable(L, -2);
 
     free(wmodelpath);
@@ -259,7 +280,7 @@ static int lort_sessionoptions_AppendExecutionProvider_DML (lua_State *L) {
     #else
         luaL_error(L, "DirectML is not enabled in this build.");
     #endif
-    
+
     return 0;
 }
 
@@ -291,7 +312,7 @@ static int lort_sessionoptions_AppendExecutionProvider_CUDA (lua_State *L) {
     o.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchExhaustive;
     o.gpu_mem_limit = SIZE_MAX;
     ORT_LUA_ERROR(L, g_ort->SessionOptionsAppendExecutionProvider_CUDA(session_options, &o));
-    
+
     return 0;
 }
 
@@ -348,7 +369,7 @@ static const struct luaL_Reg sessionoptions_m [] = {
 static int lort_session_GetInputs(lua_State *L) {
     luaL_checktype(L, 1, LUA_TUSERDATA);
     OrtSession* session = *(OrtSession**)luaL_checkudata(L, 1, "Ort.Session");
-    
+
     OrtAllocator* allocator = NULL;
     ORT_LUA_ERROR(L, g_ort->GetAllocatorWithDefaultOptions(&allocator));
 
@@ -373,7 +394,7 @@ static int lort_session_GetInputs(lua_State *L) {
 static int lort_session_GetOutputs(lua_State *L) {
     luaL_checktype(L, 1, LUA_TUSERDATA);
     OrtSession* session = *(OrtSession**)luaL_checkudata(L, 1, "Ort.Session");
-    
+
     OrtAllocator* allocator = NULL;
     ORT_LUA_ERROR(L, g_ort->GetAllocatorWithDefaultOptions(&allocator));
 
@@ -470,6 +491,7 @@ static int lort_session_release(lua_State *L) {
     return 0;
 }
 
+
 static int lort_session_run (lua_State *L) {
     luaL_checktype(L, 1, LUA_TUSERDATA);
     luaL_checktype(L, 2, LUA_TTABLE);
@@ -486,7 +508,7 @@ static int lort_session_run (lua_State *L) {
     const char** output_names = calloc(output_count, sizeof(char*));
     const OrtValue** input_tensors = calloc(input_count, sizeof(OrtValue*));
     OrtValue** output_tensors = calloc(output_count, sizeof(OrtValue*));
-    
+
     int index = 0;
     lua_pushnil(L);
     while (lua_next(L, 2) != 0) {
@@ -509,7 +531,7 @@ static int lort_session_run (lua_State *L) {
         ORT_LUA_ERROR(L, g_ort->SessionGetOutputName(session, i, allocator, (char **)output_names + i));
     }
 
-    ORT_LUA_ERROR(L, g_ort->Run(session, NULL, input_names, 
+    ORT_LUA_ERROR(L, g_ort->Run(session, NULL, input_names,
                                     input_tensors,
                                     index, output_names,
                                     output_count, output_tensors));
@@ -519,7 +541,7 @@ static int lort_session_run (lua_State *L) {
     for (int i = 0; i < output_count; i++) {
         const OrtValue** luaptr = (const OrtValue **)lua_newuserdata(L, sizeof(OrtValue*));
         *luaptr = output_tensors[i];
-        luaL_getmetatable(L, "Ort.Value");    
+        luaL_getmetatable(L, "Ort.Value");
         lua_setmetatable(L, -2);
         lua_setfield(L, -2, output_names[i]);
         allocator->Free(allocator, (void *)output_names[i]);
@@ -591,14 +613,13 @@ static int lort_value_getdata (lua_State *L) { // TODO improve data size
             lua_rawseti(L, -2, (lua_Integer)(i + 1));
         }
         break;
-    
+
     default:
         luaL_error(L, "Not implemented tensor type %i", (int)datatype);
         break;
     }
 
     g_ort->ReleaseTensorTypeAndShapeInfo(typeandshape);
-
     return 1;
 }
 
