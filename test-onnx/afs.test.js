@@ -9,7 +9,7 @@ const AdmissableList =
     "dx3GrOQPV5Mwc1c-4HTsyq0s1TNugMf7XfIKJkyVQt8", // Random NFT metadata (1.7kb of JSON)
     "XOJ8FBxa6sGLwChnxhF2L71WkKLSKq1aU5Yn5WnFLrY", // GPT-2 117M model.
     "M-OzkyjxWhSvWYF87p0kvmkuAEEkvOzIj4nMNoSIydc", // GPT-2-XL 4-bit quantized model.
-    "kd34P4974oqZf2Db-hFTUiCipsU6CzbR6t-iJoQhKIo", // Phi-2 
+    "kd34P4974oqZf2Db-hFTUiCipsU6CzbR6t-iJoQhKIo", // Phi-2
     "ISrbGzQot05rs_HKC08O_SmkipYQnqgB1yC3mjZZeEo", // Phi-3 Mini 4k Instruct
     "sKqjvBbhqKvgzZT4ojP1FNvt4r_30cqjuIIQIr-3088", // CodeQwen 1.5 7B Chat q3
     "Pr2YVrxd7VwNdg6ekC0NXWNKXxJbfTlHhhlrKbAd1dA", // Llama3 8B Instruct q4
@@ -76,15 +76,32 @@ describe('AOS-ONNX Tests', async () => {
     assert.equal(result.response.Output.data.output, 2)
   })
 
+  it('Add data to the VFS', async () => {
+    await instance['FS_createPath']('/', 'data')
+    const onnxData = await fs.promises.readFile('model.onnx');
+    await instance['FS_createDataFile']('/', 'data/model.onnx',onnxData, true, false, false)
+    const result = await handle(getEval('return "OK"'), getEnv())
+    assert.ok(result.response.Output.data.output == "OK")
+  })
+
+
   it('Llama Lua library loads', async () => {
     const result = await handle(getEval(`
 local Ort = require "ort"
 local Env = Ort.CreateEnv()
 local SessionOptions = Ort.CreateSessionOptions()
-local Session = Env:CreateSession("/Users/lfg/Desktop/mbd-library/ao-hack/aos-llama/test-onnx/network.onnx", SessionOptions)
+local Session = Env:CreateSession("/data/model.onnx", SessionOptions)
+local tensorA = Ort.CreateValue({ 3, 4 }, "FLOAT", {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12})
+local tensorB = Ort.CreateValue({ 4, 3 }, "FLOAT", {10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120})
+local result = Session:Run {
+a = tensorA,
+b = tensorB
+}
+local dataC = result.c:GetData()
+return pairs(dataC)
 `), getEnv())
     console.log(result)
-    assert.ok(result.response.Output.data.output == "A decentralized AI inference engine, built on top of ONNX runtime.")
+    assert.equal(result.response,"A decentralized AI inference engine, built on top of ONNX runtime.")
   })
 
   it.skip('AOS runs Simple ONNX file', async () => {
