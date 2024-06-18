@@ -100,8 +100,12 @@ b = tensorB
 local dataC = result.c:GetData()
 return pairs(dataC)
 `), getEnv())
-    console.log(result)
-    assert.equal(result.response,"A decentralized AI inference engine, built on top of ONNX runtime.")
+    expected_output = [
+   700,  800,  900,
+  1580, 1840, 2100,
+  2460, 2880, 3300
+];
+    assert.equal(JSON.stringify(arrayToList(result.response.Error)),JSON.stringify(expected_output));
   })
 
   it.skip('AOS runs Simple ONNX file', async () => {
