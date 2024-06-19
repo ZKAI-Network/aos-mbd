@@ -646,7 +646,7 @@ function unexportedRuntimeSymbol(sym) {
 }
 
 var ASM_CONSTS = {
- 1577274: ($0, $1, $2, $3) => {
+ 1577498: ($0, $1, $2, $3) => {
   if (typeof Module == "undefined" || !Module.MountedFiles) {
    return 1;
   }
@@ -671,7 +671,7 @@ var ASM_CONSTS = {
    return 4;
   }
  },
- 1577775: () => (typeof wasmOffsetConverter !== "undefined")
+ 1577999: () => (typeof wasmOffsetConverter !== "undefined")
 };
 
 function __asyncjs__weavedrive_open(c_filename, mode) {
@@ -5374,9 +5374,9 @@ var _asyncify_start_rewind = createExportWrapper("asyncify_start_rewind", 1);
 
 var _asyncify_stop_rewind = createExportWrapper("asyncify_stop_rewind", 0);
 
-var ___start_em_js = Module["___start_em_js"] = 1576848;
+var ___start_em_js = Module["___start_em_js"] = 1577072;
 
-var ___stop_em_js = Module["___stop_em_js"] = 1577274;
+var ___stop_em_js = Module["___stop_em_js"] = 1577498;
 
 function invoke_vii(index, a1, a2) {
  var sp = stackSave();

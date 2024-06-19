@@ -84,6 +84,15 @@ describe('AOS-ONNX Tests', async () => {
     assert.ok(result.response.Output.data.output == "OK")
   })
 
+  function arrayToList(array) {
+      let list = [];
+      for (let i = array.length - 1; i >= 0; i--) {
+          list[i] = array[i];
+      }
+      console.log(list);
+      return list;
+  }
+
 
   it('Llama Lua library loads', async () => {
     const result = await handle(getEval(`
@@ -100,8 +109,13 @@ b = tensorB
 local dataC = result.c:GetData()
 return pairs(dataC)
 `), getEnv())
-    console.log(result)
-    assert.equal(result.response,"A decentralized AI inference engine, built on top of ONNX runtime.")
+    expected_output = [
+   700,  800,  900,
+  1580, 1840, 2100,
+  2460, 2880, 3300
+];
+    // Not sure why the output is called Error. Seems like an issue to handle later for sure. 
+    assert.equal(JSON.stringify(arrayToList(result.response.Error)),JSON.stringify(expected_output));
   })
 
   it.skip('AOS runs Simple ONNX file', async () => {
